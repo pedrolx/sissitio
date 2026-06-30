@@ -2,6 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import RelatoriosScreen from './src/screens/relatorios/RelatoriosScreen';
+import PerfilScreen from './src/screens/perfil/PerfilScreen';
 
 // Telas de autenticação
 import LoginScreen from './src/screens/auth/LoginScreen';
@@ -47,7 +49,7 @@ function MainTabs() {
       <Tab.Screen name="Vendas" component={ListaVendasScreen} />
       <Tab.Screen name="Mov" component={ListaMovimentacoesScreen} />
       <Tab.Screen name="Estoque" component={ListaEstoqueScreen} />
-      <Tab.Screen name="Perfil" component={DashboardScreen} /> {/* substituir depois */}
+      <Tab.Screen name="Perfil" component={PerfilScreen} /> {/* substituir depois */}
     </Tab.Navigator>
   );
 }
@@ -58,7 +60,7 @@ export default function AppNavigator({ initialRouteName = 'Login' }) {
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRouteName}>
 
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} />
+        <Stack.Screen name="Re cuperarSenha" component={RecuperarSenhaScreen} />
 
         <Stack.Screen name="Main" component={MainTabs} />
 
@@ -79,6 +81,9 @@ export default function AppNavigator({ initialRouteName = 'Login' }) {
         <Stack.Screen name="ListaVendas" component={ListaVendasScreen} />
         <Stack.Screen name="FormVenda" component={FormVendaScreen} />
         <Stack.Screen name="DetalhesVenda" component={DetalhesVendaScreen} />
+
+        <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
+        <Stack.Screen name="Perfil" component={PerfilScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
