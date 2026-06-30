@@ -53,11 +53,11 @@ export default function DashboardScreen({ navigation }) {
       </ScrollView>
 
       <View style={styles.bottomMenu}>
-        <TouchableOpacity><Text>🏠</Text></TouchableOpacity>
-        <TouchableOpacity><Text>🛒</Text></TouchableOpacity>
-        <TouchableOpacity><Text>🔄</Text></TouchableOpacity>
-        <TouchableOpacity><Text>📦</Text></TouchableOpacity>
-        <TouchableOpacity onPress={handleLogout}><Text>👤</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Main')}><Text>🏠</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Vendas')}><Text>🛒</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ListaMovimentacoes')}><Text>🔄</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ListaEstoque')}><Text>📦</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Perfil')}><Text>👤</Text></TouchableOpacity>
       </View>
     </View>
   )
