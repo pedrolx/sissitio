@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import LoginScreen from '../screens/auth/LoginScreen'
 import RecuperarSenhaScreen from '../screens/auth/RecuperarSenhaScreen'
 import DashboardScreen from '../screens/dashboard/DashboardScreen'
+import DetalhesAnimalScreen from '../screens/animais/DetalhesAnimalScreen'
 
 const Stack = createStackNavigator()
 const Tab = createBottomTabNavigator()
@@ -29,6 +30,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="DetalhesAnimal" component={DetalhesAnimalScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   )

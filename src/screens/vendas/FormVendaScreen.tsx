@@ -16,11 +16,16 @@ import { Input } from '../../components/Input';
 
 type Cliente = { idCliente: number; nome: string; telefone: string };
 type Produto = { idProduto: number; nome: string; unidadeMedida: string; precoSugerido: number; precoBase: number };
+type Animal = { idAnimal: number; especie: string; status: string; pesoAtual: number };
 type ItemVenda = {
-    produto: Produto;
+    tipo: 'produto' | 'animal';
+    id: number; // idProduto ou idAnimal
+    nome: string;
+    unidade: string;
     quantidade: number;
     valorUnitario: number;
     valorTotal: number;
+    animalId?: number; // para rastrear
 };
 
 export default function FormVendaScreen({ navigation }) {
@@ -28,16 +33,17 @@ export default function FormVendaScreen({ navigation }) {
     const [itens, setItens] = useState<ItemVenda[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [produtos, setProdutos] = useState<Produto[]>([]);
+    const [animais, setAnimais] = useState<Animal[]>([]);
     const [modalClienteVisible, setModalClienteVisible] = useState(false);
     const [modalProdutoVisible, setModalProdutoVisible] = useState(false);
-    const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
-    const [quantidade, setQuantidade] = useState('');
+    const [modalAnimalVisible, setModalAnimalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const [desconto, setDesconto] = useState('0');
 
     useEffect(() => {
         carregarClientes();
         carregarProdutos();
+        carregarAnimais();
     }, []);
 
     async function carregarClientes() {
@@ -50,37 +56,50 @@ export default function FormVendaScreen({ navigation }) {
         if (!error) setProdutos(data || []);
     }
 
-    function adicionarItem(produto: Produto, qtd: number) {
-        if (qtd <= 0) {
+    async function carregarAnimais() {
+        const { data, error } = await supabase
+            .from('Animal')
+            .select('*')
+            .eq('status', 'vivo')
+            .order('especie');
+        if (!error) setAnimais(data || []);
+    }
+
+    function adicionarItem(tipo: 'produto' | 'animal', item: any, quantidade: number, valorUnitario: number) {
+        if (quantidade <= 0) {
             Alert.alert('Atenção', 'Quantidade deve ser maior que zero');
             return;
         }
-        // Verificar se produto já está na lista
-        const existingIndex = itens.findIndex((i) => i.produto.idProduto === produto.idProduto);
-        const valorUnitario = produto.precoSugerido || produto.precoBase;
         const novoItem: ItemVenda = {
-            produto,
-            quantidade: qtd,
+            tipo,
+            id: tipo === 'produto' ? item.idProduto : item.idAnimal,
+            nome: tipo === 'produto' ? item.nome : item.especie,
+            unidade: tipo === 'produto' ? item.unidadeMedida : 'un',
+            quantidade,
             valorUnitario,
-            valorTotal: qtd * valorUnitario,
+            valorTotal: quantidade * valorUnitario,
+            animalId: tipo === 'animal' ? item.idAnimal : undefined,
         };
-        if (existingIndex >= 0) {
-            const novosItens = [...itens];
-            novosItens[existingIndex].quantidade += qtd;
-            novosItens[existingIndex].valorTotal = novosItens[existingIndex].quantidade * valorUnitario;
-            setItens(novosItens);
-        } else {
-            setItens([...itens, novoItem]);
+        // Verifica se já existe item igual (apenas para produtos; para animais, pode repetir?)
+        if (tipo === 'produto') {
+            const existingIndex = itens.findIndex(i => i.tipo === 'produto' && i.id === item.idProduto);
+            if (existingIndex >= 0) {
+                const novos = [...itens];
+                novos[existingIndex].quantidade += quantidade;
+                novos[existingIndex].valorTotal = novos[existingIndex].quantidade * valorUnitario;
+                setItens(novos);
+                return;
+            }
         }
-        setModalProdutoVisible(false);
-        setSelectedProduto(null);
-        setQuantidade('');
+        setItens([...itens, novoItem]);
+        if (tipo === 'produto') setModalProdutoVisible(false);
+        else setModalAnimalVisible(false);
     }
 
     function removerItem(index: number) {
-        const novosItens = [...itens];
-        novosItens.splice(index, 1);
-        setItens(novosItens);
+        const novos = [...itens];
+        novos.splice(index, 1);
+        setItens(novos);
     }
 
     function calcularSubtotal() {
@@ -94,14 +113,11 @@ export default function FormVendaScreen({ navigation }) {
     }
 
     async function finalizarVenda() {
-
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             Alert.alert('Erro', 'Usuário não autenticado');
-            setLoading(false);
             return;
         }
-
         if (!cliente) {
             Alert.alert('Atenção', 'Selecione um cliente');
             return;
@@ -131,66 +147,84 @@ export default function FormVendaScreen({ navigation }) {
             return;
         }
 
-        // 2. Inserir itens e atualizar estoque
         let erro = false;
+        // Para cada item, processar
         for (const item of itens) {
-            // Inserir ItemVenda
-            const { error: itemError } = await supabase.from('ItemVenda').insert({
-                idVenda: venda.idVenda,
-                idProduto: item.produto.idProduto,
-                quantidade: item.quantidade,
-                valorUnitario: item.valorUnitario,
-                valorTotal: item.valorTotal,
-            });
-            if (itemError) {
-                Alert.alert('Erro', `Erro ao inserir item ${item.produto.nome}: ${itemError.message}`);
-                erro = true;
-                break;
-            }
-
-            // Atualizar estoque (diminuir quantidade)
-            const { data: estoque, error: estoqueError } = await supabase
-                .from('Estoque')
-                .select('quantidadeAtual')
-                .eq('idProduto', item.produto.idProduto)
-                .single();
-            if (estoqueError) {
-                Alert.alert('Erro', `Erro ao buscar estoque de ${item.produto.nome}: ${estoqueError.message}`);
-                erro = true;
-                break;
-            }
-            const novaQuantidade = estoque.quantidadeAtual - item.quantidade;
-            if (novaQuantidade < 0) {
-                Alert.alert('Erro', `Estoque insuficiente para ${item.produto.nome}. Disponível: ${estoque.quantidadeAtual}`);
-                erro = true;
-                break;
-            }
-            const { error: updateError } = await supabase
-                .from('Estoque')
-                .update({ quantidadeAtual: novaQuantidade })
-                .eq('idProduto', item.produto.idProduto);
-            if (updateError) {
-                Alert.alert('Erro', `Erro ao atualizar estoque de ${item.produto.nome}: ${updateError.message}`);
-                erro = true;
-                break;
-            }
-
-            // Registrar movimentação de saída
-            const { error: movError } = await supabase.from('Movimentacao').insert({
-                idProduto: item.produto.idProduto,
-                idVenda: venda.idVenda,
-                quantidade: item.quantidade,
-                tipoMovimentacao: 'saida',
-                observacoes: `Venda #${venda.idVenda}`,
-                dataMovimentacao: new Date().toISOString(),
-            });
-            if (movError) {
-                console.warn('Movimentação não registrada:', movError.message);
+            if (item.tipo === 'produto') {
+                // Inserir ItemVenda
+                const { error: itemError } = await supabase.from('ItemVenda').insert({
+                    idVenda: venda.idVenda,
+                    idProduto: item.id,
+                    quantidade: item.quantidade,
+                    valorUnitario: item.valorUnitario,
+                    valorTotal: item.valorTotal,
+                });
+                if (itemError) {
+                    Alert.alert('Erro', `Erro ao inserir item ${item.nome}: ${itemError.message}`);
+                    erro = true;
+                    break;
+                }
+                // Atualizar estoque
+                const { data: estoque, error: estError } = await supabase
+                    .from('Estoque')
+                    .select('quantidadeAtual')
+                    .eq('idProduto', item.id)
+                    .single();
+                if (estError) {
+                    Alert.alert('Erro', `Erro ao buscar estoque de ${item.nome}: ${estError.message}`);
+                    erro = true;
+                    break;
+                }
+                const novaQtd = estoque.quantidadeAtual - item.quantidade;
+                if (novaQtd < 0) {
+                    Alert.alert('Erro', `Estoque insuficiente para ${item.nome}. Disponível: ${estoque.quantidadeAtual}`);
+                    erro = true;
+                    break;
+                }
+                const { error: updateError } = await supabase
+                    .from('Estoque')
+                    .update({ quantidadeAtual: novaQtd })
+                    .eq('idProduto', item.id);
+                if (updateError) {
+                    Alert.alert('Erro', `Erro ao atualizar estoque de ${item.nome}: ${updateError.message}`);
+                    erro = true;
+                    break;
+                }
+                // Movimentação
+                await supabase.from('Movimentacao').insert({
+                    idProduto: item.id,
+                    idVenda: venda.idVenda,
+                    quantidade: item.quantidade,
+                    tipoMovimentacao: 'saida',
+                    observacoes: `Venda #${venda.idVenda}`,
+                    dataMovimentacao: new Date().toISOString(),
+                });
+            } else if (item.tipo === 'animal') {
+                // Para animal: atualizar status para 'vendido' e criar movimentação
+                const { error: updateAnimal } = await supabase
+                    .from('Animal')
+                    .update({ status: 'vendido' })
+                    .eq('idAnimal', item.animalId);
+                if (updateAnimal) {
+                    Alert.alert('Erro', `Erro ao atualizar status do animal ${item.nome}: ${updateAnimal.message}`);
+                    erro = true;
+                    break;
+                }
+                // Movimentação (não tem produto associado, mas pode registrar como venda de animal)
+                await supabase.from('Movimentacao').insert({
+                    idAnimal: item.animalId,
+                    idVenda: venda.idVenda,
+                    quantidade: 1,
+                    tipoMovimentacao: 'venda_animal',
+                    observacoes: `Venda #${venda.idVenda} - Animal ${item.nome}`,
+                    dataMovimentacao: new Date().toISOString(),
+                });
+                // Opcional: inserir um registro em ItemVenda? Poderíamos, mas não temos produto. Deixamos só movimentação.
+                // Para manter registro, poderíamos criar um produto genérico "Animal", mas não faremos.
             }
         }
 
         if (erro) {
-            // Se deu erro, poderíamos deletar a venda, mas por simplicidade, apenas avisamos.
             Alert.alert('Erro', 'A venda não foi concluída. Verifique os erros.');
         } else {
             Alert.alert('Sucesso', 'Venda registrada com sucesso!');
@@ -199,6 +233,7 @@ export default function FormVendaScreen({ navigation }) {
         setLoading(false);
     }
 
+    // Modais
     const renderClienteModal = () => (
         <Modal visible={modalClienteVisible} animationType="slide">
             <View style={styles.modalContainer}>
@@ -235,18 +270,19 @@ export default function FormVendaScreen({ navigation }) {
                         <TouchableOpacity
                             style={styles.modalItem}
                             onPress={() => {
-                                setSelectedProduto(item);
-                                // Após selecionar, pedir a quantidade (simplificado: abre um prompt ou campo)
-                                // Vamos mostrar um campo de quantidade
-                                Alert.prompt('Quantidade', `Quantidade de ${item.nome} (${item.unidadeMedida}):`, (text) => {
-                                    const qtd = parseFloat(text || '0');
-                                    if (!isNaN(qtd) && qtd > 0) {
-                                        adicionarItem(item, qtd);
-                                    } else {
-                                        Alert.alert('Erro', 'Quantidade inválida');
+                                Alert.prompt(
+                                    'Quantidade',
+                                    `Quantidade de ${item.nome} (${item.unidadeMedida}):`,
+                                    (text) => {
+                                        const qtd = parseFloat(text || '0');
+                                        if (!isNaN(qtd) && qtd > 0) {
+                                            const valor = item.precoSugerido || item.precoBase;
+                                            adicionarItem('produto', item, qtd, valor);
+                                        } else {
+                                            Alert.alert('Erro', 'Quantidade inválida');
+                                        }
                                     }
-                                    setSelectedProduto(null);
-                                });
+                                );
                             }}
                         >
                             <Text style={styles.modalItemText}>{item.nome}</Text>
@@ -259,27 +295,67 @@ export default function FormVendaScreen({ navigation }) {
         </Modal>
     );
 
+    const renderAnimalModal = () => (
+        <Modal visible={modalAnimalVisible} animationType="slide">
+            <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Selecione um Animal Vivo</Text>
+                <FlatList
+                    data={animais}
+                    keyExtractor={(item) => item.idAnimal.toString()}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.modalItem}
+                            onPress={() => {
+                                Alert.prompt(
+                                    'Valor da Venda',
+                                    `Valor unitário para ${item.especie}:`,
+                                    (text) => {
+                                        const valor = parseFloat(text || '0');
+                                        if (!isNaN(valor) && valor > 0) {
+                                            adicionarItem('animal', item, 1, valor);
+                                        } else {
+                                            Alert.alert('Erro', 'Valor inválido');
+                                        }
+                                    },
+                                    'plain-text',
+                                    '0.00'
+                                );
+                            }}
+                        >
+                            <Text style={styles.modalItemText}>{item.especie}</Text>
+                            <Text style={styles.modalItemSub}>Peso: {item.pesoAtual || '—'} kg</Text>
+                        </TouchableOpacity>
+                    )}
+                />
+                <Button title="Cancelar" onPress={() => setModalAnimalVisible(false)} />
+            </View>
+        </Modal>
+    );
+
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Nova Venda</Text>
 
-            {/* Cliente */}
             <Text style={styles.label}>Cliente</Text>
             <TouchableOpacity style={styles.selectButton} onPress={() => setModalClienteVisible(true)}>
                 <Text style={styles.selectButtonText}>{cliente ? cliente.nome : 'Selecionar Cliente'}</Text>
             </TouchableOpacity>
 
-            {/* Itens */}
             <Text style={styles.label}>Itens</Text>
-            <TouchableOpacity style={styles.selectButton} onPress={() => setModalProdutoVisible(true)}>
-                <Text style={styles.selectButtonText}>+ Adicionar Produto</Text>
-            </TouchableOpacity>
+            <View style={styles.rowButtons}>
+                <TouchableOpacity style={[styles.selectButton, styles.halfButton]} onPress={() => setModalProdutoVisible(true)}>
+                    <Text style={styles.selectButtonText}>+ Produto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.selectButton, styles.halfButton]} onPress={() => setModalAnimalVisible(true)}>
+                    <Text style={styles.selectButtonText}>+ Animal</Text>
+                </TouchableOpacity>
+            </View>
 
             {itens.map((item, idx) => (
                 <View key={idx} style={styles.itemCard}>
-                    <Text style={styles.itemNome}>{item.produto.nome}</Text>
+                    <Text style={styles.itemNome}>{item.nome} {item.tipo === 'animal' ? '(Animal)' : ''}</Text>
                     <Text style={styles.itemDetalhe}>
-                        {item.quantidade} {item.produto.unidadeMedida} x {item.valorUnitario.toFixed(2)} = {item.valorTotal.toFixed(2)}
+                        {item.quantidade} {item.unidade} x {item.valorUnitario.toFixed(2)} = {item.valorTotal.toFixed(2)}
                     </Text>
                     <TouchableOpacity onPress={() => removerItem(idx)} style={styles.removeItem}>
                         <Text style={styles.removeItemText}>Remover</Text>
@@ -287,16 +363,9 @@ export default function FormVendaScreen({ navigation }) {
                 </View>
             ))}
 
-            {/* Desconto */}
             <Text style={styles.label}>Desconto (R$)</Text>
-            <Input
-                value={desconto}
-                onChangeText={setDesconto}
-                keyboardType="numeric"
-                placeholder="0.00"
-            />
+            <Input value={desconto} onChangeText={setDesconto} keyboardType="numeric" placeholder="0.00" />
 
-            {/* Totais */}
             <View style={styles.totalCard}>
                 <Text style={styles.totalLabel}>Subtotal: R$ {calcularSubtotal().toFixed(2)}</Text>
                 <Text style={styles.totalLabel}>Desconto: R$ {parseFloat(desconto || '0').toFixed(2)}</Text>
@@ -307,6 +376,7 @@ export default function FormVendaScreen({ navigation }) {
 
             {renderClienteModal()}
             {renderProdutoModal()}
+            {renderAnimalModal()}
         </ScrollView>
     );
 }
@@ -316,6 +386,8 @@ const styles = StyleSheet.create({
     title: { fontSize: 24, fontWeight: 'bold', color: '#2C2C2C', marginBottom: 20, textAlign: 'center' },
     label: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C', marginTop: 12, marginBottom: 8 },
     selectButton: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D2D2D2', borderRadius: 8, padding: 12, marginBottom: 16 },
+    rowButtons: { flexDirection: 'row', justifyContent: 'space-between' },
+    halfButton: { flex: 0.48 },
     selectButtonText: { fontSize: 16, color: '#3E7C59', textAlign: 'center' },
     itemCard: { backgroundColor: '#FFF', borderRadius: 8, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#E8E8E8' },
     itemNome: { fontSize: 16, fontWeight: 'bold' },
