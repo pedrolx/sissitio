@@ -52,22 +52,15 @@ export default function ListaAnimaisScreen({ navigation }) {
   };
 
   const renderItem = ({ item }: { item: Animal }) => (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('DetalhesAnimal', { id: item.idAnimal })}>
       <View style={styles.cardContent}>
         <Text style={styles.especie}>{item.especie}</Text>
         <Text style={styles.detalhe}>Nascimento: {formatarData(item.dataNascimento)}</Text>
         <Text style={styles.detalhe}>Status: {item.status}</Text>
         {item.pesoAtual ? <Text style={styles.detalhe}>Peso: {item.pesoAtual} kg</Text> : null}
       </View>
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => navigation.navigate('FormAnimal', { id: item.idAnimal })}>
-          <Text style={styles.edit}>✏️</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => excluirAnimal(item.idAnimal)}>
-          <Text style={styles.delete}>🗑️</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <Text style={styles.detailIcon}>👉</Text>
+    </TouchableOpacity>
   );
 
   return (
@@ -88,6 +81,7 @@ export default function ListaAnimaisScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  detailIcon: { fontSize: 20, color: '#C17F59' },
   container: { flex: 1, backgroundColor: '#F7F5EF', padding: 16 },
   card: {
     backgroundColor: '#FFF',
