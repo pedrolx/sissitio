@@ -5,13 +5,13 @@ describe('Testes de Clientes (Integração)', () => {
 
   afterAll(async () => {
     if (clienteId) {
-      await supabase.from('Cliente').delete().eq('idCliente', clienteId);
+      await supabase.from('cliente').delete().eq('idcliente', clienteId);
     }
   });
 
   it('deve cadastrar um cliente', async () => {
     const { data, error } = await supabase
-      .from('Cliente')
+      .from('cliente')
       .insert([
         {
           nome: 'Cliente Teste Integração',
@@ -27,16 +27,16 @@ describe('Testes de Clientes (Integração)', () => {
     expect(data?.nome).toBe('Cliente Teste Integração');
     expect(data?.telefone).toBe('(11) 99999-9999');
 
-    clienteId = data?.idCliente as number;
+    clienteId = data?.idcliente as number;
   });
 
   it('deve atualizar um cliente', async () => {
     expect(clienteId).not.toBeNull();
 
     const { data, error } = await supabase
-      .from('Cliente')
+      .from('cliente')
       .update({ telefone: '(11) 88888-8888' })
-      .eq('idCliente', clienteId)
+      .eq('idcliente', clienteId)
       .select()
       .single();
 
@@ -47,7 +47,7 @@ describe('Testes de Clientes (Integração)', () => {
 
   it('deve listar clientes', async () => {
     const { data, error } = await supabase
-      .from('Cliente')
+      .from('cliente')
       .select('*')
       .limit(10);
 

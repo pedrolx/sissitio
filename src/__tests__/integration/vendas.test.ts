@@ -6,41 +6,44 @@ describe('Testes de Vendas (Integração)', () => {
   let vendaId: number | null = null;
 
   beforeAll(async () => {
-    // Criar cliente e produto para os testes
+    // Criar cliente para os testes
     const { data: cliente, error: clienteError } = await supabase
-      .from('Cliente')
+      .from('cliente')
       .insert([{ nome: 'Cliente Venda Teste', telefone: '(11) 99999-9999' }])
       .select()
       .single();
-    expect(clienteError).toBeNull();
-    clienteId = cliente?.idCliente as number;
 
+    expect(clienteError).toBeNull();
+    clienteId = cliente?.idcliente as number;
+
+    // Criar produto para os testes
     const { data: produto, error: produtoError } = await supabase
-      .from('Produto')
-      .insert([{ nome: 'Produto Venda Teste', unidadeMedida: 'un', precoBase: 10 }])
+      .from('produto')
+      .insert([{ nome: 'Produto Venda Teste', unidademedida: 'un', precobase: 10 }])
       .select()
       .single();
+
     expect(produtoError).toBeNull();
-    produtoId = produto?.idProduto as number;
+    produtoId = produto?.idproduto as number;
 
     // Criar estoque para o produto
-    await supabase.from('Estoque').insert([{ idProduto: produtoId, quantidadeAtual: 100 }]);
+    await supabase.from('estoque').insert([{ idproduto: produtoId, quantidadeatual: 100 }]);
   });
 
   afterAll(async () => {
-    // Limpar dados criados
+    // Limpar dados criados (ordem correta)
     if (vendaId) {
-      // Deletar itens e movimentações associadas
-      await supabase.from('ItemVenda').delete().eq('idVenda', vendaId);
-      await supabase.from('Movimentacao').delete().eq('idVenda', vendaId);
-      await supabase.from('Venda').delete().eq('idVenda', vendaId);
-    }
-    if (clienteId) {
-      await supabase.from('Cliente').delete().eq('idCliente', clienteId);
+      // Deletar itens, movimentações e venda
+      await supabase.from('itemvenda').delete().eq('idvenda', vendaId);
+      await supabase.from('movimentacao').delete().eq('idvenda', vendaId);
+      await supabase.from('venda').delete().eq('idvenda', vendaId);
     }
     if (produtoId) {
-      await supabase.from('Estoque').delete().eq('idProduto', produtoId);
-      await supabase.from('Produto').delete().eq('idProduto', produtoId);
+      await supabase.from('estoque').delete().eq('idproduto', produtoId);
+      await supabase.from('produto').delete().eq('idproduto', produtoId);
+    }
+    if (clienteId) {
+      await supabase.from('cliente').delete().eq('idcliente', clienteId);
     }
   });
 
@@ -54,14 +57,14 @@ describe('Testes de Vendas (Integração)', () => {
 
     // 1. Criar venda
     const { data: venda, error: vendaError } = await supabase
-      .from('Venda')
+      .from('venda')
       .insert([
         {
-          idCliente: clienteId,
-          idUsuario: userId,
-          dataVenda: new Date().toISOString(),
-          statusPagamento: 'Pendente',
-          valorTotal: 20,
+          idcliente: clienteId,
+          idusuario: userId,
+          datavenda: new Date().toISOString(),
+          statuspagamento: 'Pendente',
+          valortotal: 20,
         },
       ])
       .select()
@@ -69,16 +72,16 @@ describe('Testes de Vendas (Integração)', () => {
 
     expect(vendaError).toBeNull();
     expect(venda).not.toBeNull();
-    vendaId = venda?.idVenda as number;
+    vendaId = venda?.idvenda as number;
 
     // 2. Inserir item
-    const { error: itemError } = await supabase.from('ItemVenda').insert([
+    const { error: itemError } = await supabase.from('itemvenda').insert([
       {
-        idVenda: vendaId,
-        idProduto: produtoId,
+        idvenda: vendaId,
+        idproduto: produtoId,
         quantidade: 2,
-        valorUnitario: 10,
-        valorTotal: 20,
+        valorunitario: 10,
+        valortotal: 20,
       },
     ]);
 
@@ -86,31 +89,31 @@ describe('Testes de Vendas (Integração)', () => {
 
     // 3. Atualizar estoque (diminuir)
     const { data: estoqueAtual, error: buscaEstoque } = await supabase
-      .from('Estoque')
-      .select('quantidadeAtual')
-      .eq('idProduto', produtoId)
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', produtoId)
       .single();
 
     expect(buscaEstoque).toBeNull();
     expect(estoqueAtual).not.toBeNull();
 
-    const novaQtd = (estoqueAtual?.quantidadeAtual || 0) - 2;
+    const novaQtd = (estoqueAtual?.quantidadeatual as number) - 2;
     const { error: updateEstoque } = await supabase
-      .from('Estoque')
-      .update({ quantidadeAtual: novaQtd })
-      .eq('idProduto', produtoId);
+      .from('estoque')
+      .update({ quantidadeatual: novaQtd })
+      .eq('idproduto', produtoId);
 
     expect(updateEstoque).toBeNull();
 
     // 4. Registrar movimentação de saída
-    const { error: movError } = await supabase.from('Movimentacao').insert([
+    const { error: movError } = await supabase.from('movimentacao').insert([
       {
-        idProduto: produtoId,
-        idVenda: vendaId,
+        idproduto: produtoId,
+        idvenda: vendaId,
         quantidade: 2,
-        tipoMovimentacao: 'saida',
+        tipomovimentacao: 'saida',
         observacoes: `Venda #${vendaId}`,
-        dataMovimentacao: new Date().toISOString(),
+        datamovimentacao: new Date().toISOString(),
       },
     ]);
 
@@ -118,19 +121,19 @@ describe('Testes de Vendas (Integração)', () => {
 
     // Verificar estoque final
     const { data: estoqueFinal, error: finalError } = await supabase
-      .from('Estoque')
-      .select('quantidadeAtual')
-      .eq('idProduto', produtoId)
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', produtoId)
       .single();
 
     expect(finalError).toBeNull();
-    expect(estoqueFinal?.quantidadeAtual).toBe(98);
+    expect(estoqueFinal?.quantidadeatual).toBe(98);
   });
 
   it('deve listar vendas', async () => {
     const { data, error } = await supabase
-      .from('Venda')
-      .select('*, Cliente(nome), Usuario(nome)')
+      .from('venda')
+      .select('*, cliente(nome), usuario(nome)')
       .limit(10);
 
     expect(error).toBeNull();
