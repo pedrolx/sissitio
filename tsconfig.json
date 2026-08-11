@@ -2,6 +2,9 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "typeRoots": ["./node_modules/@types", "./@types"]
-  }
+    "typeRoots": ["./node_modules/@types", "./@types"],
+    "types": ["jest", "node"],
+    "jsx": "react-native"
+  },
+  "include": ["src/**/*", "jest.config.js", "jest.setup.js"]
 }
