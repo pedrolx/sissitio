@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { BarChart, PieChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
 
 type RelatorioEstoque = {
   nome: string;
@@ -14,6 +16,8 @@ type RelatorioVenda = {
   valorTotal: number;
   cliente: string;
 };
+
+const screenWidth = Dimensions.get('window').width - 32;
 
 export default function RelatoriosScreen() {
   const [estoque, setEstoque] = useState<RelatorioEstoque[]>([]);
@@ -80,9 +84,31 @@ export default function RelatoriosScreen() {
 
     switch (tipoRelatorio) {
       case 'estoque':
+        // Top 5 produtos com mais estoque
+        const sorted = [...estoque].sort((a, b) => b.quantidadeAtual - a.quantidadeAtual).slice(0, 5);
+        const data = {
+          labels: sorted.map(item => item.nome.substring(0, 10)),
+          datasets: [{ data: sorted.map(item => item.quantidadeAtual) }],
+        };
         return (
           <View>
-            <Text style={styles.subtitle}>Produtos em Estoque</Text>
+            <Text style={styles.subtitle}>Top 5 Produtos em Estoque</Text>
+            <BarChart
+              data={data}
+              width={screenWidth}
+              height={220}
+              chartConfig={{
+                backgroundColor: '#FFF',
+                backgroundGradientFrom: '#FFF',
+                backgroundGradientTo: '#FFF',
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(62, 124, 89, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: { borderRadius: 8 },
+              }}
+              style={styles.chart}
+              fromZero
+            />
             {estoque.map((item, idx) => (
               <View key={idx} style={styles.itemRow}>
                 <Text style={styles.itemName}>{item.nome}</Text>
@@ -94,9 +120,34 @@ export default function RelatoriosScreen() {
           </View>
         );
       case 'vendas':
+        // Agrupar vendas por cliente (top 5)
+        const clientes = vendas.reduce((acc, v) => {
+          acc[v.cliente] = (acc[v.cliente] || 0) + v.valorTotal;
+          return acc;
+        }, {} as Record<string, number>);
+        const sortedClientes = Object.entries(clientes).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        const pieData = sortedClientes.map(([name, value]) => ({
+          name: name.substring(0, 12),
+          amount: value,
+          color: ['#3E7C59', '#C17F59', '#5BA16A', '#8AA98A', '#D4A373'][Math.floor(Math.random() * 5)],
+          legendFontColor: '#2C2C2C',
+          legendFontSize: 12,
+        }));
         return (
           <View>
-            <Text style={styles.subtitle}>Últimas 50 Vendas</Text>
+            <Text style={styles.subtitle}>Vendas por Cliente (Top 5)</Text>
+            <PieChart
+              data={pieData}
+              width={screenWidth}
+              height={220}
+              chartConfig={{
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              }}
+              accessor="amount"
+              backgroundColor="transparent"
+              paddingLeft="15"
+              absolute
+            />
             {vendas.map((venda) => (
               <View key={venda.idVenda} style={styles.itemRow}>
                 <Text style={styles.itemName}>#{venda.idVenda} - {new Date(venda.dataVenda).toLocaleDateString()}</Text>
@@ -176,4 +227,5 @@ const styles = StyleSheet.create({
   itemDetail: { fontSize: 12, color: '#8A8A8A' },
   bigNumber: { fontSize: 48, fontWeight: 'bold', textAlign: 'center', color: '#3E7C59', marginTop: 20 },
   loading: { textAlign: 'center', marginTop: 50, color: '#8A8A8A' },
+  chart: { marginVertical: 8, borderRadius: 8 },
 });
