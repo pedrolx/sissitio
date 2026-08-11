@@ -15,18 +15,25 @@ function MainTabs() {
   return (
     <Tab.Navigator>
       <Tab.Screen name="Home" component={DashboardScreen} />
-      <Tab.Screen name="Vendas" component={DashboardScreen} /> // Temporário
-      <Tab.Screen name="Mov" component={DashboardScreen} /> // Temporário
-      <Tab.Screen name="Estoque" component={DashboardScreen} /> // Temporário
-      <Tab.Screen name="Perfil" component={DashboardScreen} /> // Temporário
+      {/* Temporário: substituir pelas telas reais depois */}
+      <Tab.Screen name="Vendas" component={DashboardScreen} />
+      <Tab.Screen name="Mov" component={DashboardScreen} />
+      <Tab.Screen name="Estoque" component={DashboardScreen} />
+      <Tab.Screen name="Perfil" component={DashboardScreen} />
     </Tab.Navigator>
   )
 }
 
-export default function AppNavigator() {
+// 👇 Adicione a interface para as props
+interface AppNavigatorProps {
+  initialRouteName?: 'Login' | 'Main'
+}
+
+// 👇 Agora o componente aceita a prop initialRouteName
+export default function AppNavigator({ initialRouteName = 'Login' }: AppNavigatorProps) {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRouteName}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
