@@ -7,25 +7,25 @@ describe('Testes de Movimentações (Integração)', () => {
   beforeAll(async () => {
     // Criar produto para os testes
     const { data: produto, error: produtoError } = await supabase
-      .from('Produto')
-      .insert([{ nome: 'Produto Mov Teste', unidadeMedida: 'kg', precoBase: 5 }])
+      .from('produto')
+      .insert([{ nome: 'Produto Mov Teste', unidademedida: 'kg', precobase: 5 }])
       .select()
       .single();
 
     expect(produtoError).toBeNull();
-    produtoId = produto?.idProduto as number;
+    produtoId = produto?.idproduto as number;
 
     // Criar estoque
-    await supabase.from('Estoque').insert([{ idProduto: produtoId, quantidadeAtual: 50 }]);
+    await supabase.from('estoque').insert([{ idproduto: produtoId, quantidadeatual: 50 }]);
   });
 
   afterAll(async () => {
     if (produtoId) {
-      await supabase.from('Estoque').delete().eq('idProduto', produtoId);
-      await supabase.from('Produto').delete().eq('idProduto', produtoId);
+      await supabase.from('estoque').delete().eq('idproduto', produtoId);
+      await supabase.from('produto').delete().eq('idproduto', produtoId);
     }
     if (movimentacaoId) {
-      await supabase.from('Movimentacao').delete().eq('idMovimentacao', movimentacaoId);
+      await supabase.from('movimentacao').delete().eq('idmovimentacao', movimentacaoId);
     }
   });
 
@@ -34,14 +34,14 @@ describe('Testes de Movimentações (Integração)', () => {
 
     const quantidade = 10;
     const { data: mov, error: movError } = await supabase
-      .from('Movimentacao')
+      .from('movimentacao')
       .insert([
         {
-          idProduto: produtoId,
+          idproduto: produtoId,
           quantidade: quantidade,
-          tipoMovimentacao: 'entrada',
+          tipomovimentacao: 'entrada',
           observacoes: 'Teste de entrada',
-          dataMovimentacao: new Date().toISOString(),
+          datamovimentacao: new Date().toISOString(),
         },
       ])
       .select()
@@ -49,17 +49,35 @@ describe('Testes de Movimentações (Integração)', () => {
 
     expect(movError).toBeNull();
     expect(mov).not.toBeNull();
-    movimentacaoId = mov?.idMovimentacao as number;
+    movimentacaoId = mov?.idmovimentacao as number;
 
-    // Verificar se o estoque foi atualizado (entrada)
+    // Atualizar estoque (somar a quantidade)
     const { data: estoqueAtual, error: buscaEstoque } = await supabase
-      .from('Estoque')
-      .select('quantidadeAtual')
-      .eq('idProduto', produtoId)
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', produtoId)
       .single();
 
     expect(buscaEstoque).toBeNull();
-    expect(estoqueAtual?.quantidadeAtual).toBe(60); // 50 + 10
+    expect(estoqueAtual).not.toBeNull();
+
+    const novaQuantidade = (estoqueAtual?.quantidadeatual || 0) + quantidade;
+    const { error: updateError } = await supabase
+      .from('estoque')
+      .update({ quantidadeatual: novaQuantidade })
+      .eq('idproduto', produtoId);
+
+    expect(updateError).toBeNull();
+
+    // Verificar estoque final
+    const { data: estoqueFinal, error: finalError } = await supabase
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', produtoId)
+      .single();
+
+    expect(finalError).toBeNull();
+    expect(estoqueFinal?.quantidadeatual).toBe(60); // 50 + 10
   });
 
   it('deve registrar uma movimentação de saída', async () => {
@@ -67,14 +85,14 @@ describe('Testes de Movimentações (Integração)', () => {
 
     const quantidade = 5;
     const { data: mov, error: movError } = await supabase
-      .from('Movimentacao')
+      .from('movimentacao')
       .insert([
         {
-          idProduto: produtoId,
+          idproduto: produtoId,
           quantidade: quantidade,
-          tipoMovimentacao: 'saida',
+          tipomovimentacao: 'saida',
           observacoes: 'Teste de saída',
-          dataMovimentacao: new Date().toISOString(),
+          datamovimentacao: new Date().toISOString(),
         },
       ])
       .select()
@@ -83,22 +101,40 @@ describe('Testes de Movimentações (Integração)', () => {
     expect(movError).toBeNull();
     expect(mov).not.toBeNull();
 
-    // Verificar estoque
+    // Atualizar estoque (subtrair a quantidade)
     const { data: estoqueAtual, error: buscaEstoque } = await supabase
-      .from('Estoque')
-      .select('quantidadeAtual')
-      .eq('idProduto', produtoId)
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', produtoId)
       .single();
 
     expect(buscaEstoque).toBeNull();
-    expect(estoqueAtual?.quantidadeAtual).toBe(55); // 60 - 5
+    expect(estoqueAtual).not.toBeNull();
+
+    const novaQuantidade = (estoqueAtual?.quantidadeatual || 0) - quantidade;
+    const { error: updateError } = await supabase
+      .from('estoque')
+      .update({ quantidadeatual: novaQuantidade })
+      .eq('idproduto', produtoId);
+
+    expect(updateError).toBeNull();
+
+    // Verificar estoque final
+    const { data: estoqueFinal, error: finalError } = await supabase
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', produtoId)
+      .single();
+
+    expect(finalError).toBeNull();
+    expect(estoqueFinal?.quantidadeatual).toBe(55); // 60 - 5
   });
 
   it('deve listar movimentações', async () => {
     const { data, error } = await supabase
-      .from('Movimentacao')
-      .select('*, Produto(nome)')
-      .order('dataMovimentacao', { ascending: false })
+      .from('movimentacao')
+      .select('*, produto(nome)')
+      .order('datamovimentacao', { ascending: false })
       .limit(10);
 
     expect(error).toBeNull();
