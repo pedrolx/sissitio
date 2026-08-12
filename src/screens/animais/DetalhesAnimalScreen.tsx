@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
+
 export default function DetalhesAnimalScreen({ route, navigation }) {
   const { id } = route.params;
   const [animal, setAnimal] = useState(null);
@@ -14,9 +15,9 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
 
   async function carregarAnimal() {
     const { data, error } = await supabase
-      .from('Animal')
+      .from('animal')
       .select('*')
-      .eq('idAnimal', id)
+      .eq('idanimal', id)
       .single();
     if (error) Alert.alert('Erro', error.message);
     else setAnimal(data);
@@ -34,19 +35,19 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
           setLoading(true);
           // Atualizar status
           const { error: updateError } = await supabase
-            .from('Animal')
+            .from('animal')
             .update({ status: 'abatido' })
-            .eq('idAnimal', id);
+            .eq('idanimal', id);
           if (updateError) {
             Alert.alert('Erro', updateError.message);
             setLoading(false);
             return;
           }
           // Registrar movimentação
-          const { error: movError } = await supabase.from('Movimentacao').insert({
-            idAnimal: id,
-            tipoMovimentacao: 'abate',
-            dataMovimentacao: new Date().toISOString(),
+          const { error: movError } = await supabase.from('movimentacao').insert({
+            idanimal: id,
+            tipomovimentacao: 'abate',
+            datamovimentacao: new Date().toISOString(),
             observacoes: `Animal ${animal.especie} abatido`,
           });
           if (movError) Alert.alert('Erro', movError.message);
@@ -65,16 +66,16 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
       <Text style={styles.title}>Detalhes do Animal</Text>
       <View style={styles.card}>
         <Text style={styles.label}>Espécie: <Text style={styles.value}>{animal.especie}</Text></Text>
-        <Text style={styles.label}>Nascimento: <Text style={styles.value}>{animal.dataNascimento || '—'}</Text></Text>
+        <Text style={styles.label}>Nascimento: <Text style={styles.value}>{animal.datanascimento || '—'}</Text></Text>
         <Text style={styles.label}>Status: <Text style={styles.value}>{animal.status}</Text></Text>
-        <Text style={styles.label}>Peso: <Text style={styles.value}>{animal.pesoAtual || '—'} kg</Text></Text>
+        <Text style={styles.label}>Peso: <Text style={styles.value}>{animal.pesoatual || '—'} kg</Text></Text>
         <Text style={styles.label}>Observações: <Text style={styles.value}>{animal.observacoes || '—'}</Text></Text>
       </View>
 
       {animal.status === 'vivo' && (
         <Button title="Registrar Abate" onPress={registrarAbate} variant="danger" />
       )}
-      <Button title="Editar" onPress={() => navigation.navigate('FormAnimal', { id: animal.idAnimal })} />
+      <Button title="Editar" onPress={() => navigation.navigate('FormAnimal', { id: animal.idanimal })} />
     </View>
   );
 }

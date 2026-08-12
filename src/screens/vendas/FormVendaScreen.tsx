@@ -14,17 +14,17 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 
-type Cliente = { idCliente: number; nome: string; telefone: string };
-type Produto = { idProduto: number; nome: string; unidadeMedida: string; precoSugerido: number; precoBase: number };
-type Animal = { idAnimal: number; especie: string; status: string; pesoAtual: number };
+type Cliente = { idcliente: number; nome: string; telefone: string };
+type Produto = { idproduto: number; nome: string; unidademedida: string; precosugerido: number; precobase: number };
+type Animal = { idanimal: number; especie: string; status: string; pesoatual: number };
 type ItemVenda = {
     tipo: 'produto' | 'animal';
-    id: number; // idProduto ou idAnimal
+    id: number; // idproduto ou idanimal
     nome: string;
     unidade: string;
     quantidade: number;
-    valorUnitario: number;
-    valorTotal: number;
+    valorunitario: number;
+    valortotal: number;
     animalId?: number; // para rastrear
 };
 
@@ -47,46 +47,46 @@ export default function FormVendaScreen({ navigation }) {
     }, []);
 
     async function carregarClientes() {
-        const { data, error } = await supabase.from('Cliente').select('*').order('nome');
+        const { data, error } = await supabase.from('cliente').select('*').order('nome');
         if (!error) setClientes(data || []);
     }
 
     async function carregarProdutos() {
-        const { data, error } = await supabase.from('Produto').select('*').order('nome');
+        const { data, error } = await supabase.from('produto').select('*').order('nome');
         if (!error) setProdutos(data || []);
     }
 
     async function carregarAnimais() {
         const { data, error } = await supabase
-            .from('Animal')
+            .from('animal')
             .select('*')
             .eq('status', 'vivo')
             .order('especie');
         if (!error) setAnimais(data || []);
     }
 
-    function adicionarItem(tipo: 'produto' | 'animal', item: any, quantidade: number, valorUnitario: number) {
+    function adicionarItem(tipo: 'produto' | 'animal', item: any, quantidade: number, valorunitario: number) {
         if (quantidade <= 0) {
             Alert.alert('Atenção', 'Quantidade deve ser maior que zero');
             return;
         }
         const novoItem: ItemVenda = {
             tipo,
-            id: tipo === 'produto' ? item.idProduto : item.idAnimal,
+            id: tipo === 'produto' ? item.idproduto : item.idanimal,
             nome: tipo === 'produto' ? item.nome : item.especie,
-            unidade: tipo === 'produto' ? item.unidadeMedida : 'un',
+            unidade: tipo === 'produto' ? item.unidademedida : 'un',
             quantidade,
-            valorUnitario,
-            valorTotal: quantidade * valorUnitario,
-            animalId: tipo === 'animal' ? item.idAnimal : undefined,
+            valorunitario,
+            valortotal: quantidade * valorunitario,
+            animalId: tipo === 'animal' ? item.idanimal : undefined,
         };
         // Verifica se já existe item igual (apenas para produtos; para animais, pode repetir?)
         if (tipo === 'produto') {
-            const existingIndex = itens.findIndex(i => i.tipo === 'produto' && i.id === item.idProduto);
+            const existingIndex = itens.findIndex(i => i.tipo === 'produto' && i.id === item.idproduto);
             if (existingIndex >= 0) {
                 const novos = [...itens];
                 novos[existingIndex].quantidade += quantidade;
-                novos[existingIndex].valorTotal = novos[existingIndex].quantidade * valorUnitario;
+                novos[existingIndex].valortotal = novos[existingIndex].quantidade * valorunitario;
                 setItens(novos);
                 return;
             }
@@ -103,7 +103,7 @@ export default function FormVendaScreen({ navigation }) {
     }
 
     function calcularSubtotal() {
-        return itens.reduce((sum, item) => sum + item.valorTotal, 0);
+        return itens.reduce((sum, item) => sum + item.valortotal, 0);
     }
 
     function calcularTotal() {
@@ -130,13 +130,13 @@ export default function FormVendaScreen({ navigation }) {
         setLoading(true);
         // 1. Registrar a venda
         const { data: venda, error: vendaError } = await supabase
-            .from('Venda')
+            .from('venda')
             .insert({
-                idCliente: cliente.idCliente,
-                idUsuario: user.id,
-                dataVenda: new Date().toISOString(),
-                statusPagamento: 'Pendente',
-                valorTotal: calcularTotal(),
+                idcliente: cliente.idcliente,
+                idusuario: user.id,
+                datavenda: new Date().toISOString(),
+                statuspagamento: 'Pendente',
+                valortotal: calcularTotal(),
             })
             .select()
             .single();
@@ -152,12 +152,12 @@ export default function FormVendaScreen({ navigation }) {
         for (const item of itens) {
             if (item.tipo === 'produto') {
                 // Inserir ItemVenda
-                const { error: itemError } = await supabase.from('ItemVenda').insert({
-                    idVenda: venda.idVenda,
-                    idProduto: item.id,
+                const { error: itemError } = await supabase.from('itemvenda').insert({
+                    idvenda: venda.idvenda,
+                    idproduto: item.id,
                     quantidade: item.quantidade,
-                    valorUnitario: item.valorUnitario,
-                    valorTotal: item.valorTotal,
+                    valorunitario: item.valorunitario,
+                    valortotal: item.valortotal,
                 });
                 if (itemError) {
                     Alert.alert('Erro', `Erro ao inserir item ${item.nome}: ${itemError.message}`);
@@ -166,61 +166,61 @@ export default function FormVendaScreen({ navigation }) {
                 }
                 // Atualizar estoque
                 const { data: estoque, error: estError } = await supabase
-                    .from('Estoque')
-                    .select('quantidadeAtual')
-                    .eq('idProduto', item.id)
+                    .from('estoque')
+                    .select('quantidadeatual')
+                    .eq('idproduto', item.id)
                     .single();
                 if (estError) {
                     Alert.alert('Erro', `Erro ao buscar estoque de ${item.nome}: ${estError.message}`);
                     erro = true;
                     break;
                 }
-                const novaQtd = estoque.quantidadeAtual - item.quantidade;
+                const novaQtd = estoque.quantidadeatual - item.quantidade;
                 if (novaQtd < 0) {
-                    Alert.alert('Erro', `Estoque insuficiente para ${item.nome}. Disponível: ${estoque.quantidadeAtual}`);
+                    Alert.alert('Erro', `Estoque insuficiente para ${item.nome}. Disponível: ${estoque.quantidadeatual}`);
                     erro = true;
                     break;
                 }
                 const { error: updateError } = await supabase
-                    .from('Estoque')
-                    .update({ quantidadeAtual: novaQtd })
-                    .eq('idProduto', item.id);
+                    .from('estoque')
+                    .update({ quantidadeatual: novaQtd })
+                    .eq('idproduto', item.id);
                 if (updateError) {
                     Alert.alert('Erro', `Erro ao atualizar estoque de ${item.nome}: ${updateError.message}`);
                     erro = true;
                     break;
                 }
                 // Movimentação
-                await supabase.from('Movimentacao').insert({
-                    idProduto: item.id,
-                    idVenda: venda.idVenda,
+                await supabase.from('movimentacao').insert({
+                    idproduto: item.id,
+                    idvenda: venda.idvenda,
                     quantidade: item.quantidade,
-                    tipoMovimentacao: 'saida',
-                    observacoes: `Venda #${venda.idVenda}`,
-                    dataMovimentacao: new Date().toISOString(),
+                    tipomovimentacao: 'saida',
+                    observacoes: `Venda #${venda.idvenda}`,
+                    datamovimentacao: new Date().toISOString(),
                 });
             } else if (item.tipo === 'animal') {
                 // Para animal: atualizar status para 'vendido' e criar movimentação
                 const { error: updateAnimal } = await supabase
-                    .from('Animal')
+                    .from('animal')
                     .update({ status: 'vendido' })
-                    .eq('idAnimal', item.animalId);
+                    .eq('idanimal', item.animalId);
                 if (updateAnimal) {
                     Alert.alert('Erro', `Erro ao atualizar status do animal ${item.nome}: ${updateAnimal.message}`);
                     erro = true;
                     break;
                 }
                 // Movimentação (não tem produto associado, mas pode registrar como venda de animal)
-                await supabase.from('Movimentacao').insert({
-                    idAnimal: item.animalId,
-                    idVenda: venda.idVenda,
+                await supabase.from('movimentacao').insert({
+                    idanimal: item.animalId,
+                    idvenda: venda.idvenda,
                     quantidade: 1,
-                    tipoMovimentacao: 'venda_animal',
-                    observacoes: `Venda #${venda.idVenda} - Animal ${item.nome}`,
-                    dataMovimentacao: new Date().toISOString(),
+                    tipomovimentacao: 'venda_animal',
+                    observacoes: `Venda #${venda.idvenda} - Animal ${item.nome}`,
+                    datamovimentacao: new Date().toISOString(),
                 });
                 // Opcional: inserir um registro em ItemVenda? Poderíamos, mas não temos produto. Deixamos só movimentação.
-                // Para manter registro, poderíamos criar um produto genérico "Animal", mas não faremos.
+                // Para manter registro, poderíamos criar um produto genérico "animal", mas não faremos.
             }
         }
 
@@ -240,7 +240,7 @@ export default function FormVendaScreen({ navigation }) {
                 <Text style={styles.modalTitle}>Selecione um Cliente</Text>
                 <FlatList
                     data={clientes}
-                    keyExtractor={(item) => item.idCliente.toString()}
+                    keyExtractor={(item) => item.idcliente.toString()}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.modalItem}
@@ -265,18 +265,18 @@ export default function FormVendaScreen({ navigation }) {
                 <Text style={styles.modalTitle}>Selecione um Produto</Text>
                 <FlatList
                     data={produtos}
-                    keyExtractor={(item) => item.idProduto.toString()}
+                    keyExtractor={(item) => item.idproduto.toString()}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.modalItem}
                             onPress={() => {
                                 Alert.prompt(
                                     'Quantidade',
-                                    `Quantidade de ${item.nome} (${item.unidadeMedida}):`,
+                                    `Quantidade de ${item.nome} (${item.unidademedida}):`,
                                     (text) => {
                                         const qtd = parseFloat(text || '0');
                                         if (!isNaN(qtd) && qtd > 0) {
-                                            const valor = item.precoSugerido || item.precoBase;
+                                            const valor = item.precosugerido || item.precobase;
                                             adicionarItem('produto', item, qtd, valor);
                                         } else {
                                             Alert.alert('Erro', 'Quantidade inválida');
@@ -286,7 +286,7 @@ export default function FormVendaScreen({ navigation }) {
                             }}
                         >
                             <Text style={styles.modalItemText}>{item.nome}</Text>
-                            <Text style={styles.modalItemSub}>{item.unidadeMedida} - R$ {item.precoSugerido || item.precoBase}</Text>
+                            <Text style={styles.modalItemSub}>{item.unidademedida} - R$ {item.precosugerido || item.precobase}</Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -301,7 +301,7 @@ export default function FormVendaScreen({ navigation }) {
                 <Text style={styles.modalTitle}>Selecione um Animal Vivo</Text>
                 <FlatList
                     data={animais}
-                    keyExtractor={(item) => item.idAnimal.toString()}
+                    keyExtractor={(item) => item.idanimal.toString()}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.modalItem}
@@ -323,7 +323,7 @@ export default function FormVendaScreen({ navigation }) {
                             }}
                         >
                             <Text style={styles.modalItemText}>{item.especie}</Text>
-                            <Text style={styles.modalItemSub}>Peso: {item.pesoAtual || '—'} kg</Text>
+                            <Text style={styles.modalItemSub}>Peso: {item.pesoatual || '—'} kg</Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -355,7 +355,7 @@ export default function FormVendaScreen({ navigation }) {
                 <View key={idx} style={styles.itemCard}>
                     <Text style={styles.itemNome}>{item.nome} {item.tipo === 'animal' ? '(Animal)' : ''}</Text>
                     <Text style={styles.itemDetalhe}>
-                        {item.quantidade} {item.unidade} x {item.valorUnitario.toFixed(2)} = {item.valorTotal.toFixed(2)}
+                        {item.quantidade} {item.unidade} x {item.valorunitario.toFixed(2)} = {item.valortotal.toFixed(2)}
                     </Text>
                     <TouchableOpacity onPress={() => removerItem(idx)} style={styles.removeItem}>
                         <Text style={styles.removeItemText}>Remover</Text>

@@ -17,9 +17,9 @@ export default function FormClienteScreen({ route, navigation }) {
 
   async function carregarCliente() {
     const { data, error } = await supabase
-      .from('Cliente')
+      .from('cliente')
       .select('*')
-      .eq('idCliente', id)
+      .eq('idcliente', id)
       .single();
     if (!error && data) {
       setNome(data.nome);
@@ -36,11 +36,11 @@ export default function FormClienteScreen({ route, navigation }) {
     setLoading(true);
     const dados = { nome, telefone, observacoes };
     if (id) {
-      const { error } = await supabase.from('Cliente').update(dados).eq('idCliente', id);
+      const { error } = await supabase.from('cliente').update(dados).eq('idcliente', id);
       if (error) Alert.alert('Erro', error.message);
       else navigation.goBack();
     } else {
-      const { error } = await supabase.from('Cliente').insert([dados]);
+      const { error } = await supabase.from('cliente').insert([dados]);
       if (error) Alert.alert('Erro', error.message);
       else navigation.goBack();
     }
