@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
+// Interface com os nomes EXATOS do banco (minúsculo)
+interface Animal {
+  idanimal: number;
+  especie: string;
+  datanascimento: string | null;
+  status: string;
+  pesoatual: number | null;
+  observacoes: string | null;
+}
 
-export default function DetalhesAnimalScreen({ route, navigation }) {
+// Tipagem das props
+interface Props {
+  route: { params: { id: number } };
+  navigation: any;
+}
+
+export default function DetalhesAnimalScreen({ route, navigation }: Props) {
   const { id } = route.params;
-  const [animal, setAnimal] = useState(null);
+  const [animal, setAnimal] = useState<Animal | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +34,11 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
       .select('*')
       .eq('idanimal', id)
       .single();
-    if (error) Alert.alert('Erro', error.message);
-    else setAnimal(data);
+    if (error) {
+      Alert.alert('Erro', error.message);
+    } else {
+      setAnimal(data as Animal);
+    }
     setLoading(false);
   }
 
@@ -33,7 +51,6 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
         style: 'destructive',
         onPress: async () => {
           setLoading(true);
-          // Atualizar status
           const { error: updateError } = await supabase
             .from('animal')
             .update({ status: 'abatido' })
@@ -43,7 +60,6 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
             setLoading(false);
             return;
           }
-          // Registrar movimentação
           const { error: movError } = await supabase.from('movimentacao').insert({
             idanimal: id,
             tipomovimentacao: 'abate',
@@ -59,17 +75,33 @@ export default function DetalhesAnimalScreen({ route, navigation }) {
     ]);
   }
 
-  if (loading || !animal) return <View style={styles.container}><Text>Carregando...</Text></View>;
+  if (loading || !animal) {
+    return (
+      <View style={styles.container}>
+        <Text>Carregando...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Detalhes do Animal</Text>
       <View style={styles.card}>
-        <Text style={styles.label}>Espécie: <Text style={styles.value}>{animal.especie}</Text></Text>
-        <Text style={styles.label}>Nascimento: <Text style={styles.value}>{animal.datanascimento || '—'}</Text></Text>
-        <Text style={styles.label}>Status: <Text style={styles.value}>{animal.status}</Text></Text>
-        <Text style={styles.label}>Peso: <Text style={styles.value}>{animal.pesoatual || '—'} kg</Text></Text>
-        <Text style={styles.label}>Observações: <Text style={styles.value}>{animal.observacoes || '—'}</Text></Text>
+        <Text style={styles.label}>
+          Espécie: <Text style={styles.value}>{animal.especie}</Text>
+        </Text>
+        <Text style={styles.label}>
+          Nascimento: <Text style={styles.value}>{animal.datanascimento || '—'}</Text>
+        </Text>
+        <Text style={styles.label}>
+          Status: <Text style={styles.value}>{animal.status}</Text>
+        </Text>
+        <Text style={styles.label}>
+          Peso: <Text style={styles.value}>{animal.pesoatual || '—'} kg</Text>
+        </Text>
+        <Text style={styles.label}>
+          Observações: <Text style={styles.value}>{animal.observacoes || '—'}</Text>
+        </Text>
       </View>
 
       {animal.status === 'vivo' && (

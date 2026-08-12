@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, Button as RNButton } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Input } from '../../components/Input';
-import { Picker } from '@react-native-picker/picker'; // instale: npm install @react-native-picker/picker
+import { Picker } from '@react-native-picker/picker';
 
-type Movimentacao = {
+interface Movimentacao {
   idmovimentacao: number;
   datamovimentacao: string;
   tipomovimentacao: string;
   quantidade: number;
-  observacoes: string;
-  Produto: { nome: string };
-  Animal: { especie: string };
-};
+  observacoes: string | null;
+  produto: { nome: string }[] | null;
+  animal: { especie: string }[] | null;
+}
 
 export default function ListaMovimentacoesScreen() {
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [loading, setLoading] = useState(true);
-  // Filtros
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroProduto, setFiltroProduto] = useState('');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
-  const [produtos, setProdutos] = useState<{ id: number; nome: string }[]>([]);
+  const [produtos, setProdutos] = useState<{ idproduto: number; nome: string }[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
@@ -45,15 +44,9 @@ export default function ListaMovimentacoesScreen() {
       .select('*, produto(nome), animal(especie)')
       .order('datamovimentacao', { ascending: false });
 
-    if (filtroTipo !== 'todos') {
-      query = query.eq('tipomovimentacao', filtroTipo);
-    }
-    if (filtroProduto) {
-      query = query.eq('idproduto', parseInt(filtroProduto));
-    }
-    if (filtroDataInicio) {
-      query = query.gte('datamovimentacao', new Date(filtroDataInicio).toISOString());
-    }
+    if (filtroTipo !== 'todos') query = query.eq('tipomovimentacao', filtroTipo);
+    if (filtroProduto) query = query.eq('idproduto', parseInt(filtroProduto));
+    if (filtroDataInicio) query = query.gte('datamovimentacao', new Date(filtroDataInicio).toISOString());
     if (filtroDataFim) {
       const fim = new Date(filtroDataFim);
       fim.setHours(23, 59, 59, 999);
@@ -78,8 +71,8 @@ export default function ListaMovimentacoesScreen() {
     <View style={styles.card}>
       <Text style={styles.data}>{new Date(item.datamovimentacao).toLocaleString()}</Text>
       <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
-      <Text>Produto: {item.Produto?.nome || '—'}</Text>
-      <Text>Animal: {item.Animal?.especie || '—'}</Text>
+      <Text>Produto: {item.produto?.[0]?.nome || '—'}</Text>
+      <Text>Animal: {item.animal?.[0]?.especie || '—'}</Text>
       <Text>Quantidade: {item.quantidade}</Text>
       <Text>Observação: {item.observacoes || '—'}</Text>
     </View>
@@ -94,7 +87,6 @@ export default function ListaMovimentacoesScreen() {
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Filtros</Text>
-
           <Text style={styles.label}>Tipo</Text>
           <Picker selectedValue={filtroTipo} onValueChange={(val) => setFiltroTipo(val)} style={styles.picker}>
             <Picker.Item label="Todos" value="todos" />

@@ -4,20 +4,20 @@ import { supabase } from '../../lib/supabase';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 
-type RelatorioEstoque = {
+const screenWidth = Dimensions.get('window').width - 32;
+
+interface RelatorioEstoque {
   nome: string;
   quantidadeatual: number;
   unidademedida: string;
-};
+}
 
-type RelatorioVenda = {
+interface RelatorioVenda {
   idvenda: number;
   datavenda: string;
   valortotal: number;
   cliente: string;
-};
-
-const screenWidth = Dimensions.get('window').width - 32;
+}
 
 export default function RelatoriosScreen() {
   const [estoque, setEstoque] = useState<RelatorioEstoque[]>([]);
@@ -39,10 +39,10 @@ export default function RelatoriosScreen() {
           .from('estoque')
           .select('quantidadeatual, produto(nome, unidademedida)');
         if (error) throw error;
-        const formatted = data.map(item => ({
-          nome: item.produto.nome,
+        const formatted = data.map((item: any) => ({
+          nome: item.produto?.[0]?.nome || '—',
           quantidadeatual: item.quantidadeatual,
-          unidademedida: item.produto.unidademedida,
+          unidademedida: item.produto?.[0]?.unidademedida || '',
         }));
         setEstoque(formatted);
       } else if (tipoRelatorio === 'vendas') {
@@ -52,11 +52,11 @@ export default function RelatoriosScreen() {
           .order('datavenda', { ascending: false })
           .limit(50);
         if (error) throw error;
-        const formatted = data.map(item => ({
+        const formatted = data.map((item: any) => ({
           idvenda: item.idvenda,
           datavenda: item.datavenda,
           valortotal: item.valortotal,
-          cliente: item.cliente?.nome || 'Cliente não identificado',
+          cliente: item.cliente?.[0]?.nome || 'Cliente não identificado',
         }));
         setVendas(formatted);
       } else if (tipoRelatorio === 'movimentacoes') {
@@ -72,7 +72,7 @@ export default function RelatoriosScreen() {
         if (error) throw error;
         setAnimaisCount(count || 0);
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Erro', error.message);
     } finally {
       setLoading(false);
@@ -83,8 +83,7 @@ export default function RelatoriosScreen() {
     if (loading) return <Text style={styles.loading}>Carregando...</Text>;
 
     switch (tipoRelatorio) {
-      case 'estoque':
-        // Top 5 produtos com mais estoque
+      case 'estoque': {
         const sorted = [...estoque].sort((a, b) => b.quantidadeatual - a.quantidadeatual).slice(0, 5);
         const data = {
           labels: sorted.map(item => item.nome.substring(0, 10)),
@@ -107,29 +106,29 @@ export default function RelatoriosScreen() {
                 style: { borderRadius: 8 },
               }}
               style={styles.chart}
-              fromZero
+              fromZero={true}
+              yAxisLabel=""
+              yAxisSuffix=""
             />
             {estoque.map((item, idx) => (
               <View key={idx} style={styles.itemRow}>
                 <Text style={styles.itemName}>{item.nome}</Text>
-                <Text style={styles.itemValue}>
-                  {item.quantidadeatual} {item.unidademedida}
-                </Text>
+                <Text style={styles.itemValue}>{item.quantidadeatual} {item.unidademedida}</Text>
               </View>
             ))}
           </View>
         );
-      case 'vendas':
-        // Agrupar vendas por cliente (top 5)
-        const clientes = vendas.reduce((acc, v) => {
-          acc[v.cliente] = (acc[v.cliente] || 0) + v.valortotal;
-          return acc;
-        }, {} as Record<string, number>);
+      }
+      case 'vendas': {
+        const clientes: Record<string, number> = {};
+        vendas.forEach((v) => {
+          clientes[v.cliente] = (clientes[v.cliente] || 0) + v.valortotal;
+        });
         const sortedClientes = Object.entries(clientes).sort((a, b) => b[1] - a[1]).slice(0, 5);
-        const pieData = sortedClientes.map(([name, value]) => ({
+        const pieData = sortedClientes.map(([name, value], index) => ({
           name: name.substring(0, 12),
           amount: value,
-          color: ['#3E7C59', '#C17F59', '#5BA16A', '#8AA98A', '#D4A373'][Math.floor(Math.random() * 5)],
+          color: ['#3E7C59', '#C17F59', '#5BA16A', '#8AA98A', '#D4A373'][index % 5],
           legendFontColor: '#2C2C2C',
           legendFontSize: 12,
         }));
@@ -140,9 +139,7 @@ export default function RelatoriosScreen() {
               data={pieData}
               width={screenWidth}
               height={220}
-              chartConfig={{
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              }}
+              chartConfig={{ color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})` }}
               accessor="amount"
               backgroundColor="transparent"
               paddingLeft="15"
@@ -157,6 +154,7 @@ export default function RelatoriosScreen() {
             ))}
           </View>
         );
+      }
       case 'movimentacoes':
         return (
           <View>
@@ -179,34 +177,21 @@ export default function RelatoriosScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>RELATÓRIOS</Text>
-
       <View style={styles.linhaBotoes}>
-        <TouchableOpacity
-          style={[styles.botao, tipoRelatorio === 'estoque' && styles.botaoAtivo]}
-          onPress={() => setTipoRelatorio('estoque')}
-        >
-          <Text style={styles.botaoTexto}>Estoque</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.botao, tipoRelatorio === 'vendas' && styles.botaoAtivo]}
-          onPress={() => setTipoRelatorio('vendas')}
-        >
-          <Text style={styles.botaoTexto}>Vendas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.botao, tipoRelatorio === 'movimentacoes' && styles.botaoAtivo]}
-          onPress={() => setTipoRelatorio('movimentacoes')}
-        >
-          <Text style={styles.botaoTexto}>Movimentações</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.botao, tipoRelatorio === 'animais' && styles.botaoAtivo]}
-          onPress={() => setTipoRelatorio('animais')}
-        >
-          <Text style={styles.botaoTexto}>Animais</Text>
-        </TouchableOpacity>
+        {['estoque', 'vendas', 'movimentacoes', 'animais'].map((tipo) => (
+          <TouchableOpacity
+            key={tipo}
+            style={[styles.botao, tipoRelatorio === tipo && styles.botaoAtivo]}
+            onPress={() => setTipoRelatorio(tipo as any)}
+          >
+            <Text style={styles.botaoTexto}>
+              {tipo === 'estoque' ? 'Estoque' :
+                tipo === 'vendas' ? 'Vendas' :
+                  tipo === 'movimentacoes' ? 'Movimentações' : 'Animais'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
-
       <View style={styles.card}>{renderConteudo()}</View>
     </ScrollView>
   );

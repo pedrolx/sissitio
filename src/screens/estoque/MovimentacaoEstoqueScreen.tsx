@@ -4,7 +4,12 @@ import { supabase } from '../../lib/supabase';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 
-export default function MovimentacaoEstoqueScreen({ route, navigation }) {
+interface Props {
+  route: { params: { idproduto: number; tipo: 'entrada' | 'saida' } };
+  navigation: any;
+}
+
+export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) {
   const { idproduto, tipo } = route.params;
   const [quantidade, setQuantidade] = useState('');
   const [observacoes, setObservacoes] = useState('');
@@ -18,7 +23,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
     }
 
     setLoading(true);
-    // 1. Obter estoque atual
     const { data: estoque, error: errEst } = await supabase
       .from('estoque')
       .select('quantidadeatual')
@@ -40,7 +44,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
       return;
     }
 
-    // 2. Atualizar estoque
     const { error: updateErr } = await supabase
       .from('estoque')
       .update({ quantidadeatual: novaQuantidade })
@@ -52,7 +55,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
       return;
     }
 
-    // 3. Registrar movimentação
     const { error: movErr } = await supabase.from('movimentacao').insert({
       idproduto,
       quantidade: qtd,
@@ -72,18 +74,8 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{tipo === 'entrada' ? 'Registrar Entrada' : 'Registrar Saída'}</Text>
-      <Input
-        placeholder="Quantidade"
-        keyboardType="numeric"
-        value={quantidade}
-        onChangeText={setQuantidade}
-      />
-      <Input
-        placeholder="Observações (opcional)"
-        value={observacoes}
-        onChangeText={setObservacoes}
-        multiline
-      />
+      <Input placeholder="Quantidade" keyboardType="numeric" value={quantidade} onChangeText={setQuantidade} />
+      <Input placeholder="Observações (opcional)" value={observacoes} onChangeText={setObservacoes} multiline />
       <Button title="Confirmar" onPress={confirmar} loading={loading} />
     </View>
   );
