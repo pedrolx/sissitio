@@ -3,24 +3,28 @@ import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
-type Venda = {
+interface Venda {
   idvenda: number;
   datavenda: string;
   valortotal: number;
   statuspagamento: string;
-  Cliente: { nome: string; telefone: string };
-  Usuario: { nome: string };
-};
+  cliente: { nome: string; telefone: string }[] | null;
+  usuario: { nome: string }[] | null;
+}
 
-type ItemVenda = {
+interface ItemVenda {
   iditemvenda: number;
   quantidade: number;
   valorunitario: number;
   valortotal: number;
-  Produto: { nome: string; unidademedida: string };
-};
+  produto: { nome: string; unidademedida: string }[] | null;
+}
 
-export default function DetalhesVendaScreen({ route }) {
+interface Props {
+  route: { params: { id: number } };
+}
+
+export default function DetalhesVendaScreen({ route }: Props) {
   const { id } = route.params;
   const [venda, setVenda] = useState<Venda | null>(null);
   const [itens, setItens] = useState<ItemVenda[]>([]);
@@ -38,6 +42,7 @@ export default function DetalhesVendaScreen({ route }) {
       .select('*, cliente(nome, telefone), usuario(nome)')
       .eq('idvenda', id)
       .single();
+
     if (vendaError) {
       Alert.alert('Erro', vendaError.message);
       setLoading(false);
@@ -50,8 +55,12 @@ export default function DetalhesVendaScreen({ route }) {
       .from('itemvenda')
       .select('*, produto(nome, unidademedida)')
       .eq('idvenda', id);
-    if (itensError) Alert.alert('Erro', itensError.message);
-    else setItens(itensData || []);
+
+    if (itensError) {
+      Alert.alert('Erro', itensError.message);
+    } else {
+      setItens(itensData || []);
+    }
     setLoading(false);
   }
 
@@ -69,15 +78,20 @@ export default function DetalhesVendaScreen({ route }) {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Venda #{venda.idvenda}</Text>
+
       <View style={styles.infoCard}>
         <Text style={styles.label}>Data:</Text>
         <Text style={styles.value}>{formatarData(venda.datavenda)}</Text>
+
         <Text style={styles.label}>Cliente:</Text>
-        <Text style={styles.value}>{venda.Cliente?.nome || '—'}</Text>
+        <Text style={styles.value}>{venda.cliente?.[0]?.nome || '—'}</Text>
+
         <Text style={styles.label}>Telefone:</Text>
-        <Text style={styles.value}>{venda.Cliente?.telefone || '—'}</Text>
+        <Text style={styles.value}>{venda.cliente?.[0]?.telefone || '—'}</Text>
+
         <Text style={styles.label}>Usuário:</Text>
-        <Text style={styles.value}>{venda.Usuario?.nome || '—'}</Text>
+        <Text style={styles.value}>{venda.usuario?.[0]?.nome || '—'}</Text>
+
         <Text style={styles.label}>Status Pagamento:</Text>
         <Text style={styles.value}>{venda.statuspagamento}</Text>
       </View>
@@ -85,9 +99,9 @@ export default function DetalhesVendaScreen({ route }) {
       <Text style={styles.subtitle}>Itens</Text>
       {itens.map((item) => (
         <View key={item.iditemvenda} style={styles.itemCard}>
-          <Text style={styles.itemNome}>{item.Produto?.nome}</Text>
+          <Text style={styles.itemNome}>{item.produto?.[0]?.nome || '—'}</Text>
           <Text style={styles.itemDetalhe}>
-            {item.quantidade} {item.Produto?.unidademedida} x {formatarMoeda(item.valorunitario)}
+            {item.quantidade} {item.produto?.[0]?.unidademedida || ''} x {formatarMoeda(item.valorunitario)}
           </Text>
           <Text style={styles.itemTotal}>{formatarMoeda(item.valortotal)}</Text>
         </View>
