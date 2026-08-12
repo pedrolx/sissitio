@@ -4,9 +4,9 @@ import { supabase } from '../../lib/supabase';
 
 type EstoqueItem = {
   idEstoque: number;
-  idProduto: number;
-  quantidadeAtual: number;
-  Produto: { nome: string; unidadeMedida: string };
+  idproduto: number;
+  quantidadeatual: number;
+  Produto: { nome: string; unidademedida: string };
 };
 
 export default function ListaEstoqueScreen({ navigation }) {
@@ -20,31 +20,31 @@ export default function ListaEstoqueScreen({ navigation }) {
   async function carregarEstoque() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('Estoque')
-      .select('*, Produto(nome, unidadeMedida)');
+      .from('estoque')
+      .select('*, produto(nome, unidademedida)');
     if (error) Alert.alert('Erro', error.message);
     else setItens(data || []);
     setLoading(false);
   }
 
-  async function registrarMovimentacao(idProduto: number, tipo: 'entrada' | 'saida', quantidade: number, observacoes?: string) {
+  async function registrarMovimentacao(idproduto: number, tipo: 'entrada' | 'saida', quantidade: number, observacoes?: string) {
     // validação de quantidade > 0, etc.
     // Para simplificar, vamos navegar para uma tela de formulário
-    navigation.navigate('MovimentacaoEstoque', { idProduto, tipo });
+    navigation.navigate('MovimentacaoEstoque', { idproduto, tipo });
   }
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.nome}>{item.Produto.nome}</Text>
-      <Text>Quantidade: {item.quantidadeAtual} {item.Produto.unidadeMedida}</Text>
+      <Text>Quantidade: {item.quantidadeatual} {item.Produto.unidademedida}</Text>
       <View style={styles.buttons}>
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('MovimentacaoEstoque', { idProduto: item.idProduto, tipo: 'entrada' })}>
+        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('MovimentacaoEstoque', { idproduto: item.idproduto, tipo: 'entrada' })}>
           <Text>➕ Entrada</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('MovimentacaoEstoque', { idProduto: item.idProduto, tipo: 'saida' })}>
+        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('MovimentacaoEstoque', { idproduto: item.idproduto, tipo: 'saida' })}>
           <Text>➖ Saída</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('HistoricoMovimentacoes', { idProduto: item.idProduto })}>
+        <TouchableOpacity onPress={() => navigation.navigate('HistoricoMovimentacoes', { idproduto: item.idproduto })}>
           <Text>📋 Histórico</Text>
         </TouchableOpacity>
       </View>

@@ -226,7 +226,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
             <Text style={styles.movimento}>Nenhuma movimentação registrada</Text>
           ) : (
             movimentacoes.map((item, idx) => {
-              const nomeProduto = item.produto?.[0]?.nome || 'Animal';
+              const nomeProduto = item.produto?.[0]?.nome || 'animal';
               return (
                 <Text key={idx} style={styles.movimento}>
                   {formatarData(item.datamovimentacao)} – {item.tipomovimentacao} – {nomeProduto}{' '}

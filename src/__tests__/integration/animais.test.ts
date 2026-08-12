@@ -73,20 +73,20 @@ describe('Testes de Animais (Integração)', () => {
     expect(animal).not.toBeNull();
     expect(animal?.idanimal).toBeDefined();
 
-    const idAnimal = animal?.idanimal as number;
+    const idanimal = animal?.idanimal as number;
 
     // Registrar abate
     const { error: updateError } = await supabase
       .from('animal')
       .update({ status: 'abatido' })
-      .eq('idanimal', idAnimal);
+      .eq('idanimal', idanimal);
 
     expect(updateError).toBeNull();
 
     // Registrar movimentação de abate
     const { error: movError } = await supabase.from('movimentacao').insert([
       {
-        idanimal: idAnimal,
+        idanimal: idanimal,
         tipomovimentacao: 'abate',
         observacoes: 'Animal abatido em teste',
         datamovimentacao: new Date().toISOString(),
@@ -99,15 +99,15 @@ describe('Testes de Animais (Integração)', () => {
     const { data: animalAtualizado, error: buscaError } = await supabase
       .from('animal')
       .select('status')
-      .eq('idanimal', idAnimal)
+      .eq('idanimal', idanimal)
       .maybeSingle();
 
     expect(buscaError).toBeNull();
     expect(animalAtualizado?.status).toBe('abatido');
 
     // Limpar
-    await supabase.from('animal').delete().eq('idanimal', idAnimal);
-    await supabase.from('movimentacao').delete().eq('idanimal', idAnimal);
+    await supabase.from('animal').delete().eq('idanimal', idanimal);
+    await supabase.from('movimentacao').delete().eq('idanimal', idanimal);
   });
 
   it('deve vender um animal (alterar status e criar movimentação)', async () => {
@@ -128,20 +128,20 @@ describe('Testes de Animais (Integração)', () => {
     expect(createError).toBeNull();
     expect(animal).not.toBeNull();
 
-    const idAnimal = animal?.idanimal as number;
+    const idanimal = animal?.idanimal as number;
 
     // Atualizar status para vendido
     const { error: updateError } = await supabase
       .from('animal')
       .update({ status: 'vendido' })
-      .eq('idanimal', idAnimal);
+      .eq('idanimal', idanimal);
 
     expect(updateError).toBeNull();
 
     // Registrar movimentação de venda de animal
     const { error: movError } = await supabase.from('movimentacao').insert([
       {
-        idanimal: idAnimal,
+        idanimal: idanimal,
         tipomovimentacao: 'venda_animal',
         observacoes: 'Animal vendido em teste',
         datamovimentacao: new Date().toISOString(),
@@ -151,7 +151,7 @@ describe('Testes de Animais (Integração)', () => {
     expect(movError).toBeNull();
 
     // Limpar
-    await supabase.from('animal').delete().eq('idanimal', idAnimal);
-    await supabase.from('movimentacao').delete().eq('idanimal', idAnimal);
+    await supabase.from('animal').delete().eq('idanimal', idanimal);
+    await supabase.from('movimentacao').delete().eq('idanimal', idanimal);
   });
 });

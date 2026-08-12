@@ -8,9 +8,9 @@ export default function FormProdutoScreen({ route, navigation }) {
   const { id } = route.params || {};
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [unidadeMedida, setUnidadeMedida] = useState('');
-  const [precoBase, setPrecoBase] = useState('');
-  const [precoSugerido, setPrecoSugerido] = useState('');
+  const [unidademedida, setunidademedida] = useState('');
+  const [precobase, setprecobase] = useState('');
+  const [precosugerido, setprecosugerido] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,16 +19,16 @@ export default function FormProdutoScreen({ route, navigation }) {
 
   async function carregarProduto() {
     const { data, error } = await supabase
-      .from('Produto')
+      .from('produto')
       .select('*')
-      .eq('idProduto', id)
+      .eq('idproduto', id)
       .single();
     if (!error && data) {
       setNome(data.nome);
       setCategoria(data.categoria || '');
-      setUnidadeMedida(data.unidadeMedida || '');
-      setPrecoBase(data.precoBase?.toString() || '');
-      setPrecoSugerido(data.precoSugerido?.toString() || '');
+      setunidademedida(data.unidademedida || '');
+      setprecobase(data.precobase?.toString() || '');
+      setprecosugerido(data.precosugerido?.toString() || '');
     }
   }
 
@@ -37,7 +37,7 @@ export default function FormProdutoScreen({ route, navigation }) {
       Alert.alert('Atenção', 'Nome é obrigatório');
       return;
     }
-    if (!unidadeMedida.trim()) {
+    if (!unidademedida.trim()) {
       Alert.alert('Atenção', 'Unidade de medida é obrigatória');
       return;
     }
@@ -45,23 +45,23 @@ export default function FormProdutoScreen({ route, navigation }) {
     const dados = {
       nome,
       categoria: categoria || null,
-      unidadeMedida,
-      precoBase: parseFloat(precoBase) || 0,
-      precoSugerido: parseFloat(precoSugerido) || null,
+      unidademedida,
+      precobase: parseFloat(precobase) || 0,
+      precosugerido: parseFloat(precosugerido) || null,
     };
 
     if (id) {
       // Atualizar produto existente
       const { error } = await supabase
-        .from('Produto')
+        .from('produto')
         .update(dados)
-        .eq('idProduto', id);
+        .eq('idproduto', id);
       if (error) Alert.alert('Erro', error.message);
       else navigation.goBack();
     } else {
       // Inserir novo produto e criar estoque associado
       const { data: novoProduto, error: insertError } = await supabase
-        .from('Produto')
+        .from('produto')
         .insert([dados])
         .select()
         .single();
@@ -71,8 +71,8 @@ export default function FormProdutoScreen({ route, navigation }) {
       } else {
         // Criar registro de estoque para este produto (quantidade inicial 0)
         const { error: estoqueError } = await supabase
-          .from('Estoque')
-          .insert({ idProduto: novoProduto.idProduto, quantidadeAtual: 0 });
+          .from('estoque')
+          .insert({ idproduto: novoProduto.idproduto, quantidadeatual: 0 });
         if (estoqueError) {
           Alert.alert('Aviso', 'Produto criado, mas erro ao criar estoque: ' + estoqueError.message);
         }
@@ -91,13 +91,13 @@ export default function FormProdutoScreen({ route, navigation }) {
       <Input value={categoria} onChangeText={setCategoria} placeholder="Ex: Hortaliça" />
 
       <Text style={styles.label}>Unidade de Medida *</Text>
-      <Input value={unidadeMedida} onChangeText={setUnidadeMedida} placeholder="kg, un, dúzia, litro" />
+      <Input value={unidademedida} onChangeText={setunidademedida} placeholder="kg, un, dúzia, litro" />
 
       <Text style={styles.label}>Preço Base (R$)</Text>
-      <Input value={precoBase} onChangeText={setPrecoBase} keyboardType="numeric" placeholder="0.00" />
+      <Input value={precobase} onChangeText={setprecobase} keyboardType="numeric" placeholder="0.00" />
 
       <Text style={styles.label}>Preço Sugerido (R$)</Text>
-      <Input value={precoSugerido} onChangeText={setPrecoSugerido} keyboardType="numeric" placeholder="0.00" />
+      <Input value={precosugerido} onChangeText={setprecosugerido} keyboardType="numeric" placeholder="0.00" />
 
       <Button title={id ? 'Atualizar' : 'Salvar'} onPress={salvar} loading={loading} />
     </View>

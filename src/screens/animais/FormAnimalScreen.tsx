@@ -8,9 +8,9 @@ import { TouchableOpacity } from 'react-native';
 export default function FormAnimalScreen({ route, navigation }) {
     const { id } = route.params || {};
     const [especie, setEspecie] = useState('');
-    const [dataNascimento, setDataNascimento] = useState('');
+    const [datanascimento, setdatanascimento] = useState('');
     const [status, setStatus] = useState('vivo');
-    const [pesoAtual, setPesoAtual] = useState('');
+    const [pesoatual, setpesoatual] = useState('');
     const [observacoes, setObservacoes] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -20,15 +20,15 @@ export default function FormAnimalScreen({ route, navigation }) {
 
     async function carregarAnimal() {
         const { data, error } = await supabase
-            .from('Animal')
+            .from('animal')
             .select('*')
-            .eq('idAnimal', id)
+            .eq('idanimal', id)
             .single();
         if (!error && data) {
             setEspecie(data.especie);
-            setDataNascimento(data.dataNascimento?.slice(0, 10) || '');
+            setdatanascimento(data.datanascimento?.slice(0, 10) || '');
             setStatus(data.status);
-            setPesoAtual(data.pesoAtual?.toString() || '');
+            setpesoatual(data.pesoatual?.toString() || '');
             setObservacoes(data.observacoes || '');
         }
     }
@@ -41,21 +41,21 @@ export default function FormAnimalScreen({ route, navigation }) {
         setLoading(true);
         const dados = {
             especie,
-            dataNascimento: dataNascimento || null,
+            datanascimento: datanascimento || null,
             status,
-            pesoAtual: parseFloat(pesoAtual) || null,
+            pesoatual: parseFloat(pesoatual) || null,
             observacoes: observacoes || null,
         };
 
         if (id) {
             const { error } = await supabase
-                .from('Animal')
+                .from('animal')
                 .update(dados)
-                .eq('idAnimal', id);
+                .eq('idanimal', id);
             if (error) Alert.alert('Erro', error.message);
             else navigation.goBack();
         } else {
-            const { error } = await supabase.from('Animal').insert([dados]);
+            const { error } = await supabase.from('animal').insert([dados]);
             if (error) Alert.alert('Erro', error.message);
             else navigation.goBack();
         }
@@ -69,8 +69,8 @@ export default function FormAnimalScreen({ route, navigation }) {
 
             <Text style={styles.label}>Data de Nascimento (AAAA-MM-DD)</Text>
             <Input
-                value={dataNascimento}
-                onChangeText={setDataNascimento}
+                value={datanascimento}
+                onChangeText={setdatanascimento}
                 placeholder="2024-01-15"
                 keyboardType="default"
             />
@@ -94,7 +94,7 @@ export default function FormAnimalScreen({ route, navigation }) {
             </View>
 
             <Text style={styles.label}>Peso Atual (kg)</Text>
-            <Input value={pesoAtual} onChangeText={setPesoAtual} keyboardType="numeric" placeholder="0.0" />
+            <Input value={pesoatual} onChangeText={setpesoatual} keyboardType="numeric" placeholder="0.0" />
 
             <Text style={styles.label}>Observações</Text>
             <Input

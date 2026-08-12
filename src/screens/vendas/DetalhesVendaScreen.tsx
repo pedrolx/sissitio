@@ -4,20 +4,20 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
 type Venda = {
-  idVenda: number;
-  dataVenda: string;
-  valorTotal: number;
-  statusPagamento: string;
+  idvenda: number;
+  datavenda: string;
+  valortotal: number;
+  statuspagamento: string;
   Cliente: { nome: string; telefone: string };
   Usuario: { nome: string };
 };
 
 type ItemVenda = {
-  idItemVenda: number;
+  iditemvenda: number;
   quantidade: number;
-  valorUnitario: number;
-  valorTotal: number;
-  Produto: { nome: string; unidadeMedida: string };
+  valorunitario: number;
+  valortotal: number;
+  Produto: { nome: string; unidademedida: string };
 };
 
 export default function DetalhesVendaScreen({ route }) {
@@ -34,9 +34,9 @@ export default function DetalhesVendaScreen({ route }) {
     setLoading(true);
     // Buscar cabeçalho da venda
     const { data: vendaData, error: vendaError } = await supabase
-      .from('Venda')
-      .select('*, Cliente(nome, telefone), Usuario(nome)')
-      .eq('idVenda', id)
+      .from('venda')
+      .select('*, cliente(nome, telefone), usuario(nome)')
+      .eq('idvenda', id)
       .single();
     if (vendaError) {
       Alert.alert('Erro', vendaError.message);
@@ -47,9 +47,9 @@ export default function DetalhesVendaScreen({ route }) {
 
     // Buscar itens da venda
     const { data: itensData, error: itensError } = await supabase
-      .from('ItemVenda')
-      .select('*, Produto(nome, unidadeMedida)')
-      .eq('idVenda', id);
+      .from('itemvenda')
+      .select('*, produto(nome, unidademedida)')
+      .eq('idvenda', id);
     if (itensError) Alert.alert('Erro', itensError.message);
     else setItens(itensData || []);
     setLoading(false);
@@ -68,10 +68,10 @@ export default function DetalhesVendaScreen({ route }) {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Venda #{venda.idVenda}</Text>
+      <Text style={styles.title}>Venda #{venda.idvenda}</Text>
       <View style={styles.infoCard}>
         <Text style={styles.label}>Data:</Text>
-        <Text style={styles.value}>{formatarData(venda.dataVenda)}</Text>
+        <Text style={styles.value}>{formatarData(venda.datavenda)}</Text>
         <Text style={styles.label}>Cliente:</Text>
         <Text style={styles.value}>{venda.Cliente?.nome || '—'}</Text>
         <Text style={styles.label}>Telefone:</Text>
@@ -79,23 +79,23 @@ export default function DetalhesVendaScreen({ route }) {
         <Text style={styles.label}>Usuário:</Text>
         <Text style={styles.value}>{venda.Usuario?.nome || '—'}</Text>
         <Text style={styles.label}>Status Pagamento:</Text>
-        <Text style={styles.value}>{venda.statusPagamento}</Text>
+        <Text style={styles.value}>{venda.statuspagamento}</Text>
       </View>
 
       <Text style={styles.subtitle}>Itens</Text>
       {itens.map((item) => (
-        <View key={item.idItemVenda} style={styles.itemCard}>
+        <View key={item.iditemvenda} style={styles.itemCard}>
           <Text style={styles.itemNome}>{item.Produto?.nome}</Text>
           <Text style={styles.itemDetalhe}>
-            {item.quantidade} {item.Produto?.unidadeMedida} x {formatarMoeda(item.valorUnitario)}
+            {item.quantidade} {item.Produto?.unidademedida} x {formatarMoeda(item.valorunitario)}
           </Text>
-          <Text style={styles.itemTotal}>{formatarMoeda(item.valorTotal)}</Text>
+          <Text style={styles.itemTotal}>{formatarMoeda(item.valortotal)}</Text>
         </View>
       ))}
 
       <View style={styles.totalCard}>
         <Text style={styles.totalLabel}>TOTAL</Text>
-        <Text style={styles.totalValue}>{formatarMoeda(venda.valorTotal)}</Text>
+        <Text style={styles.totalValue}>{formatarMoeda(venda.valortotal)}</Text>
       </View>
 
       <Button

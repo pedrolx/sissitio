@@ -4,12 +4,12 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
 type Produto = {
-  idProduto: number;
+  idproduto: number;
   nome: string;
   categoria: string;
-  unidadeMedida: string;
-  precoBase: number;
-  precoSugerido: number;
+  unidademedida: string;
+  precobase: number;
+  precosugerido: number;
 };
 
 export default function ListaProdutosScreen({ navigation }) {
@@ -22,7 +22,7 @@ export default function ListaProdutosScreen({ navigation }) {
 
   async function carregarProdutos() {
     setLoading(true);
-    const { data, error } = await supabase.from('Produto').select('*').order('nome');
+    const { data, error } = await supabase.from('produto').select('*').order('nome');
     if (error) Alert.alert('Erro', error.message);
     else setProdutos(data || []);
     setLoading(false);
@@ -35,7 +35,7 @@ export default function ListaProdutosScreen({ navigation }) {
         text: 'Excluir',
         style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase.from('Produto').delete().eq('idProduto', id);
+          const { error } = await supabase.from('produto').delete().eq('idproduto', id);
           if (error) Alert.alert('Erro', error.message);
           else carregarProdutos();
         },
@@ -47,14 +47,14 @@ export default function ListaProdutosScreen({ navigation }) {
     <View style={styles.card}>
       <View>
         <Text style={styles.nome}>{item.nome}</Text>
-        <Text>{item.categoria} • {item.unidadeMedida}</Text>
-        <Text>R$ {item.precoBase?.toFixed(2)}</Text>
+        <Text>{item.categoria} • {item.unidademedida}</Text>
+        <Text>R$ {item.precobase?.toFixed(2)}</Text>
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => navigation.navigate('FormProduto', { id: item.idProduto })}>
+        <TouchableOpacity onPress={() => navigation.navigate('FormProduto', { id: item.idproduto })}>
           <Text style={styles.edit}>✏️</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => excluirProduto(item.idProduto)}>
+        <TouchableOpacity onPress={() => excluirProduto(item.idproduto)}>
           <Text style={styles.delete}>🗑️</Text>
         </TouchableOpacity>
       </View>
@@ -64,7 +64,7 @@ export default function ListaProdutosScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Button title="+ Novo Produto" onPress={() => navigation.navigate('FormProduto')} />
-      {loading ? <Text>Carregando...</Text> : <FlatList data={produtos} renderItem={renderItem} keyExtractor={(item) => item.idProduto.toString()} />}
+      {loading ? <Text>Carregando...</Text> : <FlatList data={produtos} renderItem={renderItem} keyExtractor={(item) => item.idproduto.toString()} />}
     </View>
   );
 }
