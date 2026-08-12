@@ -3,16 +3,20 @@ import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
-type Animal = {
+interface Animal {
   idanimal: number;
   especie: string;
-  datanascimento: string;
+  datanascimento: string | null;
   status: string;
-  pesoatual: number;
-  observacoes: string;
-};
+  pesoatual: number | null;
+  observacoes: string | null;
+}
 
-export default function ListaAnimaisScreen({ navigation }) {
+interface Props {
+  navigation: any;
+}
+
+export default function ListaAnimaisScreen({ navigation }: Props) {
   const [animais, setAnimais] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,8 +30,11 @@ export default function ListaAnimaisScreen({ navigation }) {
       .from('animal')
       .select('*')
       .order('especie');
-    if (error) Alert.alert('Erro', error.message);
-    else setAnimais(data || []);
+    if (error) {
+      Alert.alert('Erro', error.message);
+    } else {
+      setAnimais(data || []);
+    }
     setLoading(false);
   }
 
@@ -46,7 +53,7 @@ export default function ListaAnimaisScreen({ navigation }) {
     ]);
   }
 
-  const formatarData = (data: string) => {
+  const formatarData = (data: string | null) => {
     if (!data) return '—';
     return new Date(data).toLocaleDateString('pt-BR');
   };
@@ -99,8 +106,5 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   especie: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C' },
   detalhe: { fontSize: 14, color: '#8A8A8A', marginTop: 4 },
-  actions: { flexDirection: 'row', gap: 12 },
-  edit: { fontSize: 20, marginRight: 8, color: '#3E7C59' },
-  delete: { fontSize: 20, color: '#C17F59' },
   loading: { textAlign: 'center', marginTop: 50, color: '#8A8A8A' },
 });

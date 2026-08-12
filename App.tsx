@@ -1,4 +1,7 @@
+// App.tsx
 import React, { useEffect, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StyleSheet, StatusBar, View } from 'react-native';
 import { supabase } from './src/lib/supabase';
 import AppNavigator from './src/navigation';
 
@@ -21,5 +24,19 @@ export default function App() {
 
   if (!isReady) return null;
 
-  return <AppNavigator initialRouteName={initialRoute} />;
+  return (
+    <SafeAreaProvider>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F7F5EF" />
+        <AppNavigator initialRouteName={initialRoute} />
+      </View>
+    </SafeAreaProvider>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F5EF',
+  },
+});
