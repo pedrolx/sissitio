@@ -6,14 +6,14 @@ import { Dimensions } from 'react-native';
 
 type RelatorioEstoque = {
   nome: string;
-  quantidadeAtual: number;
-  unidadeMedida: string;
+  quantidadeatual: number;
+  unidademedida: string;
 };
 
 type RelatorioVenda = {
-  idVenda: number;
-  dataVenda: string;
-  valorTotal: number;
+  idvenda: number;
+  datavenda: string;
+  valortotal: number;
   cliente: string;
 };
 
@@ -36,38 +36,38 @@ export default function RelatoriosScreen() {
     try {
       if (tipoRelatorio === 'estoque') {
         const { data, error } = await supabase
-          .from('Estoque')
-          .select('quantidadeAtual, Produto(nome, unidadeMedida)');
+          .from('estoque')
+          .select('quantidadeatual, produto(nome, unidademedida)');
         if (error) throw error;
         const formatted = data.map(item => ({
-          nome: item.Produto.nome,
-          quantidadeAtual: item.quantidadeAtual,
-          unidadeMedida: item.Produto.unidadeMedida,
+          nome: item.produto.nome,
+          quantidadeatual: item.quantidadeatual,
+          unidademedida: item.produto.unidademedida,
         }));
         setEstoque(formatted);
       } else if (tipoRelatorio === 'vendas') {
         const { data, error } = await supabase
-          .from('Venda')
-          .select('idVenda, dataVenda, valorTotal, Cliente(nome)')
-          .order('dataVenda', { ascending: false })
+          .from('venda')
+          .select('idvenda, datavenda, valortotal, cliente(nome)')
+          .order('datavenda', { ascending: false })
           .limit(50);
         if (error) throw error;
         const formatted = data.map(item => ({
-          idVenda: item.idVenda,
-          dataVenda: item.dataVenda,
-          valorTotal: item.valorTotal,
-          cliente: item.Cliente?.nome || 'Cliente não identificado',
+          idvenda: item.idvenda,
+          datavenda: item.datavenda,
+          valortotal: item.valortotal,
+          cliente: item.cliente?.nome || 'Cliente não identificado',
         }));
         setVendas(formatted);
       } else if (tipoRelatorio === 'movimentacoes') {
         const { count, error } = await supabase
-          .from('Movimentacao')
+          .from('movimentacao')
           .select('*', { count: 'exact', head: true });
         if (error) throw error;
         setMovimentacoesCount(count || 0);
       } else if (tipoRelatorio === 'animais') {
         const { count, error } = await supabase
-          .from('Animal')
+          .from('animal')
           .select('*', { count: 'exact', head: true });
         if (error) throw error;
         setAnimaisCount(count || 0);
@@ -85,10 +85,10 @@ export default function RelatoriosScreen() {
     switch (tipoRelatorio) {
       case 'estoque':
         // Top 5 produtos com mais estoque
-        const sorted = [...estoque].sort((a, b) => b.quantidadeAtual - a.quantidadeAtual).slice(0, 5);
+        const sorted = [...estoque].sort((a, b) => b.quantidadeatual - a.quantidadeatual).slice(0, 5);
         const data = {
           labels: sorted.map(item => item.nome.substring(0, 10)),
-          datasets: [{ data: sorted.map(item => item.quantidadeAtual) }],
+          datasets: [{ data: sorted.map(item => item.quantidadeatual) }],
         };
         return (
           <View>
@@ -113,7 +113,7 @@ export default function RelatoriosScreen() {
               <View key={idx} style={styles.itemRow}>
                 <Text style={styles.itemName}>{item.nome}</Text>
                 <Text style={styles.itemValue}>
-                  {item.quantidadeAtual} {item.unidadeMedida}
+                  {item.quantidadeatual} {item.unidademedida}
                 </Text>
               </View>
             ))}
@@ -122,7 +122,7 @@ export default function RelatoriosScreen() {
       case 'vendas':
         // Agrupar vendas por cliente (top 5)
         const clientes = vendas.reduce((acc, v) => {
-          acc[v.cliente] = (acc[v.cliente] || 0) + v.valorTotal;
+          acc[v.cliente] = (acc[v.cliente] || 0) + v.valortotal;
           return acc;
         }, {} as Record<string, number>);
         const sortedClientes = Object.entries(clientes).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -149,9 +149,9 @@ export default function RelatoriosScreen() {
               absolute
             />
             {vendas.map((venda) => (
-              <View key={venda.idVenda} style={styles.itemRow}>
-                <Text style={styles.itemName}>#{venda.idVenda} - {new Date(venda.dataVenda).toLocaleDateString()}</Text>
-                <Text style={styles.itemValue}>R$ {venda.valorTotal.toFixed(2)}</Text>
+              <View key={venda.idvenda} style={styles.itemRow}>
+                <Text style={styles.itemName}>#{venda.idvenda} - {new Date(venda.datavenda).toLocaleDateString()}</Text>
+                <Text style={styles.itemValue}>R$ {venda.valortotal.toFixed(2)}</Text>
                 <Text style={styles.itemDetail}>{venda.cliente}</Text>
               </View>
             ))}

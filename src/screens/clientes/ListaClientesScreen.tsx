@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
 type Cliente = {
-  idCliente: number;
+  idcliente: number;
   nome: string;
   telefone: string;
   observacoes: string;
@@ -21,7 +21,7 @@ export default function ListaClientesScreen({ navigation }) {
   async function carregarClientes() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('Cliente')
+      .from('cliente')
       .select('*')
       .order('nome');
     if (error) Alert.alert('Erro', error.message);
@@ -36,7 +36,7 @@ export default function ListaClientesScreen({ navigation }) {
         text: 'Excluir',
         style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase.from('Cliente').delete().eq('idCliente', id);
+          const { error } = await supabase.from('cliente').delete().eq('idcliente', id);
           if (error) Alert.alert('Erro', error.message);
           else carregarClientes();
         },
@@ -52,10 +52,10 @@ export default function ListaClientesScreen({ navigation }) {
         <Text style={styles.observacao}>{item.observacoes?.substring(0, 50)}</Text>
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => navigation.navigate('FormCliente', { id: item.idCliente })}>
+        <TouchableOpacity onPress={() => navigation.navigate('FormCliente', { id: item.idcliente })}>
           <Text style={styles.edit}>✏️</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => excluirCliente(item.idCliente)}>
+        <TouchableOpacity onPress={() => excluirCliente(item.idcliente)}>
           <Text style={styles.delete}>🗑️</Text>
         </TouchableOpacity>
       </View>
@@ -70,7 +70,7 @@ export default function ListaClientesScreen({ navigation }) {
       ) : (
         <FlatList
           data={clientes}
-          keyExtractor={(item) => item.idCliente.toString()}
+          keyExtractor={(item) => item.idcliente.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

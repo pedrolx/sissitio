@@ -5,7 +5,7 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 
 export default function MovimentacaoEstoqueScreen({ route, navigation }) {
-  const { idProduto, tipo } = route.params;
+  const { idproduto, tipo } = route.params;
   const [quantidade, setQuantidade] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,9 +20,9 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
     setLoading(true);
     // 1. Obter estoque atual
     const { data: estoque, error: errEst } = await supabase
-      .from('Estoque')
-      .select('quantidadeAtual')
-      .eq('idProduto', idProduto)
+      .from('estoque')
+      .select('quantidadeatual')
+      .eq('idproduto', idproduto)
       .single();
     if (errEst) {
       Alert.alert('Erro', errEst.message);
@@ -30,7 +30,7 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
       return;
     }
 
-    let novaQuantidade = estoque.quantidadeAtual;
+    let novaQuantidade = estoque.quantidadeatual;
     if (tipo === 'entrada') novaQuantidade += qtd;
     else novaQuantidade -= qtd;
 
@@ -42,9 +42,9 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
 
     // 2. Atualizar estoque
     const { error: updateErr } = await supabase
-      .from('Estoque')
-      .update({ quantidadeAtual: novaQuantidade })
-      .eq('idProduto', idProduto);
+      .from('estoque')
+      .update({ quantidadeatual: novaQuantidade })
+      .eq('idproduto', idproduto);
 
     if (updateErr) {
       Alert.alert('Erro', updateErr.message);
@@ -53,12 +53,12 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }) {
     }
 
     // 3. Registrar movimentação
-    const { error: movErr } = await supabase.from('Movimentacao').insert({
-      idProduto,
+    const { error: movErr } = await supabase.from('movimentacao').insert({
+      idproduto,
       quantidade: qtd,
-      tipoMovimentacao: tipo,
+      tipomovimentacao: tipo,
       observacoes: observacoes || null,
-      dataMovimentacao: new Date().toISOString(),
+      datamovimentacao: new Date().toISOString(),
     });
 
     if (movErr) Alert.alert('Erro', movErr.message);
