@@ -29,11 +29,11 @@ const Tab = createBottomTabNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="Home" component={DashboardScreen} />
-      <Tab.Screen name="Vendas" component={ListaVendasScreen} />
-      <Tab.Screen name="Mov" component={ListaMovimentacoesScreen} />
-      <Tab.Screen name="Estoque" component={ListaEstoqueScreen} />
-      <Tab.Screen name="Perfil" component={PerfilScreen} />
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Vendas" component={ListaVendasScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Mov" component={ListaMovimentacoesScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Estoque" component={ListaEstoqueScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Perfil" component={PerfilScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }
@@ -46,24 +46,24 @@ export default function AppNavigator({ initialRouteName = 'Login' }: AppNavigato
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRouteName}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} />
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="ListaClientes" component={ListaClientesScreen} />
-        <Stack.Screen name="FormCliente" component={FormClienteScreen} />
-        <Stack.Screen name="ListaProdutos" component={ListaProdutosScreen} />
-        <Stack.Screen name="FormProduto" component={FormProdutoScreen} />
-        <Stack.Screen name="ListaAnimais" component={ListaAnimaisScreen} />
-        <Stack.Screen name="FormAnimal" component={FormAnimalScreen} />
-        <Stack.Screen name="DetalhesAnimal" component={DetalhesAnimalScreen} />
-        <Stack.Screen name="ListaEstoque" component={ListaEstoqueScreen} />
-        <Stack.Screen name="MovimentacaoEstoque" component={MovimentacaoEstoqueScreen} />
-        <Stack.Screen name="ListaMovimentacoes" component={ListaMovimentacoesScreen} />
-        <Stack.Screen name="ListaVendas" component={ListaVendasScreen} />
-        <Stack.Screen name="FormVenda" component={FormVendaScreen} />
-        <Stack.Screen name="DetalhesVenda" component={DetalhesVendaScreen} />
-        <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
-        <Stack.Screen name="Perfil" component={PerfilScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="ListaClientes" component={ListaClientesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="FormCliente" component={FormClienteScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ListaProdutos" component={ListaProdutosScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="FormProduto" component={FormProdutoScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ListaAnimais" component={ListaAnimaisScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="FormAnimal" component={FormAnimalScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="DetalhesAnimal" component={DetalhesAnimalScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ListaEstoque" component={ListaEstoqueScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="MovimentacaoEstoque" component={MovimentacaoEstoqueScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ListaMovimentacoes" component={ListaMovimentacoesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ListaVendas" component={ListaVendasScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="FormVenda" component={FormVendaScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="DetalhesVenda" component={DetalhesVendaScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Relatorios" component={RelatoriosScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Perfil" component={PerfilScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

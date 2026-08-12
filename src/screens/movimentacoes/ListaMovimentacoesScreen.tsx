@@ -5,9 +5,9 @@ import { Input } from '../../components/Input';
 import { Picker } from '@react-native-picker/picker'; // instale: npm install @react-native-picker/picker
 
 type Movimentacao = {
-  idMovimentacao: number;
-  dataMovimentacao: string;
-  tipoMovimentacao: string;
+  idmovimentacao: number;
+  datamovimentacao: string;
+  tipomovimentacao: string;
   quantidade: number;
   observacoes: string;
   Produto: { nome: string };
@@ -34,30 +34,30 @@ export default function ListaMovimentacoesScreen() {
   }, [filtroTipo, filtroProduto, filtroDataInicio, filtroDataFim]);
 
   async function carregarProdutos() {
-    const { data } = await supabase.from('Produto').select('idProduto, nome').order('nome');
+    const { data } = await supabase.from('produto').select('idproduto, nome').order('nome');
     if (data) setProdutos(data);
   }
 
   async function carregarMovimentacoes() {
     setLoading(true);
     let query = supabase
-      .from('Movimentacao')
-      .select('*, Produto(nome), Animal(especie)')
-      .order('dataMovimentacao', { ascending: false });
+      .from('movimentacao')
+      .select('*, produto(nome), animal(especie)')
+      .order('datamovimentacao', { ascending: false });
 
     if (filtroTipo !== 'todos') {
-      query = query.eq('tipoMovimentacao', filtroTipo);
+      query = query.eq('tipomovimentacao', filtroTipo);
     }
     if (filtroProduto) {
-      query = query.eq('idProduto', parseInt(filtroProduto));
+      query = query.eq('idproduto', parseInt(filtroProduto));
     }
     if (filtroDataInicio) {
-      query = query.gte('dataMovimentacao', new Date(filtroDataInicio).toISOString());
+      query = query.gte('datamovimentacao', new Date(filtroDataInicio).toISOString());
     }
     if (filtroDataFim) {
       const fim = new Date(filtroDataFim);
       fim.setHours(23, 59, 59, 999);
-      query = query.lte('dataMovimentacao', fim.toISOString());
+      query = query.lte('datamovimentacao', fim.toISOString());
     }
 
     const { data, error } = await query;
@@ -76,8 +76,8 @@ export default function ListaMovimentacoesScreen() {
 
   const renderItem = ({ item }: { item: Movimentacao }) => (
     <View style={styles.card}>
-      <Text style={styles.data}>{new Date(item.dataMovimentacao).toLocaleString()}</Text>
-      <Text style={styles.tipo}>Tipo: {item.tipoMovimentacao}</Text>
+      <Text style={styles.data}>{new Date(item.datamovimentacao).toLocaleString()}</Text>
+      <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
       <Text>Produto: {item.Produto?.nome || '—'}</Text>
       <Text>Animal: {item.Animal?.especie || '—'}</Text>
       <Text>Quantidade: {item.quantidade}</Text>
@@ -109,7 +109,7 @@ export default function ListaMovimentacoesScreen() {
           <Picker selectedValue={filtroProduto} onValueChange={(val) => setFiltroProduto(val)} style={styles.picker}>
             <Picker.Item label="Todos" value="" />
             {produtos.map((p) => (
-              <Picker.Item key={p.idProduto} label={p.nome} value={p.idProduto.toString()} />
+              <Picker.Item key={p.idproduto} label={p.nome} value={p.idproduto.toString()} />
             ))}
           </Picker>
 
@@ -135,7 +135,7 @@ export default function ListaMovimentacoesScreen() {
       ) : (
         <FlatList
           data={movimentacoes}
-          keyExtractor={(item) => item.idMovimentacao.toString()}
+          keyExtractor={(item) => item.idmovimentacao.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

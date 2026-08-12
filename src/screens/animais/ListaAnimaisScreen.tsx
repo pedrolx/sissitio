@@ -4,11 +4,11 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
 type Animal = {
-  idAnimal: number;
+  idanimal: number;
   especie: string;
-  dataNascimento: string;
+  datanascimento: string;
   status: string;
-  pesoAtual: number;
+  pesoatual: number;
   observacoes: string;
 };
 
@@ -23,7 +23,7 @@ export default function ListaAnimaisScreen({ navigation }) {
   async function carregarAnimais() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('Animal')
+      .from('animal')
       .select('*')
       .order('especie');
     if (error) Alert.alert('Erro', error.message);
@@ -38,7 +38,7 @@ export default function ListaAnimaisScreen({ navigation }) {
         text: 'Excluir',
         style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase.from('Animal').delete().eq('idAnimal', id);
+          const { error } = await supabase.from('animal').delete().eq('idanimal', id);
           if (error) Alert.alert('Erro', error.message);
           else carregarAnimais();
         },
@@ -52,12 +52,12 @@ export default function ListaAnimaisScreen({ navigation }) {
   };
 
   const renderItem = ({ item }: { item: Animal }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('DetalhesAnimal', { id: item.idAnimal })}>
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('DetalhesAnimal', { id: item.idanimal })}>
       <View style={styles.cardContent}>
         <Text style={styles.especie}>{item.especie}</Text>
-        <Text style={styles.detalhe}>Nascimento: {formatarData(item.dataNascimento)}</Text>
+        <Text style={styles.detalhe}>Nascimento: {formatarData(item.datanascimento)}</Text>
         <Text style={styles.detalhe}>Status: {item.status}</Text>
-        {item.pesoAtual ? <Text style={styles.detalhe}>Peso: {item.pesoAtual} kg</Text> : null}
+        {item.pesoatual ? <Text style={styles.detalhe}>Peso: {item.pesoatual} kg</Text> : null}
       </View>
       <Text style={styles.detailIcon}>👉</Text>
     </TouchableOpacity>
@@ -71,7 +71,7 @@ export default function ListaAnimaisScreen({ navigation }) {
       ) : (
         <FlatList
           data={animais}
-          keyExtractor={(item) => item.idAnimal.toString()}
+          keyExtractor={(item) => item.idanimal.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

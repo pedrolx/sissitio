@@ -4,10 +4,10 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 
 type Venda = {
-  idVenda: number;
-  dataVenda: string;
-  valorTotal: number;
-  statusPagamento: string;
+  idvenda: number;
+  datavenda: string;
+  valortotal: number;
+  statuspagamento: string;
   Cliente: { nome: string };
   Usuario: { nome: string };
 };
@@ -23,9 +23,9 @@ export default function ListaVendasScreen({ navigation }) {
   async function carregarVendas() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('Venda')
-      .select('*, Cliente(nome), Usuario(nome)')
-      .order('dataVenda', { ascending: false });
+      .from('venda')
+      .select('*, cliente(nome), usuario(nome)')
+      .order('datavenda', { ascending: false });
     if (error) Alert.alert('Erro', error.message);
     else setVendas(data || []);
     setLoading(false);
@@ -42,14 +42,14 @@ export default function ListaVendasScreen({ navigation }) {
   const renderItem = ({ item }: { item: Venda }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('DetalhesVenda', { id: item.idVenda })}
+      onPress={() => navigation.navigate('DetalhesVenda', { id: item.idvenda })}
     >
       <View style={styles.cardContent}>
-        <Text style={styles.id}>Venda #{item.idVenda}</Text>
-        <Text style={styles.data}>{formatarData(item.dataVenda)}</Text>
+        <Text style={styles.id}>Venda #{item.idvenda}</Text>
+        <Text style={styles.data}>{formatarData(item.datavenda)}</Text>
         <Text style={styles.cliente}>Cliente: {item.Cliente?.nome || '—'}</Text>
-        <Text style={styles.total}>{formatarMoeda(item.valorTotal)}</Text>
-        <Text style={styles.status}>Status: {item.statusPagamento}</Text>
+        <Text style={styles.total}>{formatarMoeda(item.valortotal)}</Text>
+        <Text style={styles.status}>Status: {item.statuspagamento}</Text>
       </View>
       <Text style={styles.detailIcon}>👉</Text>
     </TouchableOpacity>
@@ -63,7 +63,7 @@ export default function ListaVendasScreen({ navigation }) {
       ) : (
         <FlatList
           data={vendas}
-          keyExtractor={(item) => item.idVenda.toString()}
+          keyExtractor={(item) => item.idvenda.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
