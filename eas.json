@@ -12,12 +12,24 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "hooks": {
+        "postInstall": "eas-hooks/post-install.sh"
+      },
+      "env": {
+        "NPM_FLAGS": "--legacy-peer-deps"
       }
     },
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "apk"
+      },
+      "hooks": {
+        "postInstall": "eas-hooks/post-install.sh"
+      },
+      "env": {
+        "NPM_FLAGS": "--legacy-peer-deps"
       }
     }
   },
