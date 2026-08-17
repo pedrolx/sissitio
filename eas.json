@@ -13,9 +13,6 @@
       "android": {
         "buildType": "apk"
       },
-      "hooks": {
-        "postInstall": "eas-hooks/post-install.sh"
-      },
       "env": {
         "NPM_FLAGS": "--legacy-peer-deps"
       }
@@ -24,9 +21,6 @@
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
-      },
-      "hooks": {
-        "postInstall": "eas-hooks/post-install.sh"
       },
       "env": {
         "NPM_FLAGS": "--legacy-peer-deps"
