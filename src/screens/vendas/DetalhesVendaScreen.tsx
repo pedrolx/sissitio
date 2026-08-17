@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
+import { calcularRateio } from '../../services/rateio';
+
 
 interface Venda {
   idvenda: number;
@@ -29,6 +31,7 @@ export default function DetalhesVendaScreen({ route }: Props) {
   const [venda, setVenda] = useState<Venda | null>(null);
   const [itens, setItens] = useState<ItemVenda[]>([]);
   const [loading, setLoading] = useState(true);
+  const rateio = itens.length > 0 ? calcularRateio(itens) : { jane: 0, tia: 0 };
 
   useEffect(() => {
     carregarDetalhes();
@@ -112,6 +115,18 @@ export default function DetalhesVendaScreen({ route }: Props) {
         <Text style={styles.totalValue}>{formatarMoeda(venda.valortotal)}</Text>
       </View>
 
+      <View style={styles.rateioCard}>
+        <Text style={styles.rateioTitle}>Rateio</Text>
+        <View style={styles.rateioRow}>
+          <Text style={styles.rateioLabel}>Jane:</Text>
+          <Text style={styles.rateioValue}>R$ {rateio.jane.toFixed(2)}</Text>
+        </View>
+        <View style={styles.rateioRow}>
+          <Text style={styles.rateioLabel}>Tia:</Text>
+          <Text style={styles.rateioValue}>R$ {rateio.tia.toFixed(2)}</Text>
+        </View>
+      </View>
+
       <Button
         title="Atualizar Status"
         onPress={() => {
@@ -137,4 +152,31 @@ const styles = StyleSheet.create({
   totalCard: { backgroundColor: '#3E7C59', borderRadius: 12, padding: 16, marginTop: 20, marginBottom: 30, alignItems: 'center' },
   totalLabel: { fontSize: 18, color: '#FFF', fontWeight: 'bold' },
   totalValue: { fontSize: 24, color: '#FFF', fontWeight: 'bold', marginTop: 8 },
+  rateioCard: {
+    backgroundColor: '#F0F4F0',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  rateioTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2C2C2C',
+    marginBottom: 8,
+  },
+  rateioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 4,
+  },
+  rateioLabel: {
+    fontSize: 14,
+    color: '#2C2C2C',
+  },
+  rateioValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#3E7C59',
+  },
 });
