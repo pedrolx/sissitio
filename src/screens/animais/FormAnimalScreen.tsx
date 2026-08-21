@@ -9,7 +9,7 @@ interface Props {
   navigation: any;
 }
 
-export default function FormAnimalScreen({ route, navigation }: Props) {
+export default function FormAnimalScreen({ route, navigation }: any) {
   const { id } = route.params || {};
   const [especie, setEspecie] = useState('');
   const [datanascimento, setDatanascimento] = useState('');

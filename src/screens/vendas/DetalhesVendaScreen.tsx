@@ -26,7 +26,7 @@ interface Props {
   route: { params: { id: number } };
 }
 
-export default function DetalhesVendaScreen({ route }: Props) {
+export default function DetalhesVendaScreen({ route }: any) {
   const { id } = route.params;
   const [venda, setVenda] = useState<Venda | null>(null);
   const [itens, setItens] = useState<ItemVenda[]>([]);

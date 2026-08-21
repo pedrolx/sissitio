@@ -9,7 +9,7 @@ interface Props {
   navigation: any;
 }
 
-export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) {
+export default function MovimentacaoEstoqueScreen({ route, navigation }: any) {
   const { idproduto, tipo } = route.params;
   const [quantidade, setQuantidade] = useState('');
   const [observacoes, setObservacoes] = useState('');

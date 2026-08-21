@@ -19,7 +19,7 @@ interface Props {
   navigation: any;
 }
 
-export default function DetalhesAnimalScreen({ route, navigation }: Props) {
+export default function DetalhesAnimalScreen({ route, navigation }: any) {
   const { id } = route.params;
   const [animal, setAnimal] = useState<Animal | null>(null);
   const [loading, setLoading] = useState(true);

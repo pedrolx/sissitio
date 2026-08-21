@@ -83,7 +83,35 @@ export default function AppNavigator({ initialRouteName = 'Login' }: AppNavigato
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
-        {/* ... resto das telas */}
+
+        {/* Telas de Clientes */}
+        <Stack.Screen name="ListaClientes" component={ListaClientesScreen} />
+        <Stack.Screen name="FormCliente" component={FormClienteScreen} />
+
+        {/* Telas de Produtos */}
+        <Stack.Screen name="ListaProdutos" component={ListaProdutosScreen} />
+        <Stack.Screen name="FormProduto" component={FormProdutoScreen} />
+
+        {/* Telas de Animais */}
+        <Stack.Screen name="ListaAnimais" component={ListaAnimaisScreen} />
+        <Stack.Screen name="FormAnimal" component={FormAnimalScreen} />
+        <Stack.Screen name="DetalhesAnimal" component={DetalhesAnimalScreen} />
+
+        {/* Telas de Estoque */}
+        <Stack.Screen name="ListaEstoque" component={ListaEstoqueScreen} />
+        <Stack.Screen name="MovimentacaoEstoque" component={MovimentacaoEstoqueScreen} />
+
+        {/* Telas de Movimentações */}
+        <Stack.Screen name="ListaMovimentacoes" component={ListaMovimentacoesScreen} />
+
+        {/* Telas de Vendas */}
+        <Stack.Screen name="ListaVendas" component={ListaVendasScreen} />
+        <Stack.Screen name="FormVenda" component={FormVendaScreen} />
+        <Stack.Screen name="DetalhesVenda" component={DetalhesVendaScreen} />
+
+        {/* Telas de Relatórios e Perfil */}
+        <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
+        <Stack.Screen name="Perfil" component={PerfilScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
