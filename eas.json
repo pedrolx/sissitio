@@ -16,8 +16,7 @@
       "env": {
         "NPM_FLAGS": "--legacy-peer-deps",
         "EXPO_USE_JSC": "true"
-      },
-      "jsEngine": "jsc"
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -27,8 +26,7 @@
       "env": {
         "NPM_FLAGS": "--legacy-peer-deps",
         "EXPO_USE_JSC": "true"
-      },
-      "jsEngine": "jsc"
+      }
     }
   },
   "submit": {
