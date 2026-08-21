@@ -14,8 +14,10 @@
         "buildType": "apk"
       },
       "env": {
-        "NPM_FLAGS": "--legacy-peer-deps"
-      }
+        "NPM_FLAGS": "--legacy-peer-deps",
+        "EXPO_USE_JSC": "true"
+      },
+      "jsEngine": "jsc"
     },
     "production": {
       "autoIncrement": true,
@@ -23,8 +25,10 @@
         "buildType": "apk"
       },
       "env": {
-        "NPM_FLAGS": "--legacy-peer-deps"
-      }
+        "NPM_FLAGS": "--legacy-peer-deps",
+        "EXPO_USE_JSC": "true"
+      },
+      "jsEngine": "jsc"
     }
   },
   "submit": {
