@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
+import { useClientes } from '../../hooks/useClientes';
 
 type Cliente = {
   idcliente: number;
