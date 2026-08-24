@@ -4,7 +4,8 @@
     "strict": true,
     "typeRoots": ["./node_modules/@types", "./@types"],
     "types": ["jest", "node"],
-    "jsx": "react-native"
+    "jsx": "react-native",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*", "jest.config.js", "jest.setup.js"]
 }
