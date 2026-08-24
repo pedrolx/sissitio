@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import { useAnimais } from '../../hooks/useAnimais';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 
-interface Props {
-  route: { params?: { id: number } };
-  navigation: any;
-}
-
-export default function FormAnimalScreen({ route, navigation }: any) {
+export default function FormAnimalScreen({ route, navigation }) {
   const { id } = route.params || {};
+  const { animais, salvarAnimal } = useAnimais();
   const [especie, setEspecie] = useState('');
   const [datanascimento, setDatanascimento] = useState('');
   const [status, setStatus] = useState('vivo');
@@ -19,23 +15,17 @@ export default function FormAnimalScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (id) carregarAnimal();
-  }, [id]);
-
-  async function carregarAnimal() {
-    const { data, error } = await supabase
-      .from('animal')
-      .select('*')
-      .eq('idanimal', id)
-      .single();
-    if (!error && data) {
-      setEspecie(data.especie);
-      setDatanascimento(data.datanascimento?.slice(0, 10) || '');
-      setStatus(data.status);
-      setPesoatual(data.pesoatual?.toString() || '');
-      setObservacoes(data.observacoes || '');
+    if (id) {
+      const animal = animais.find(a => a.idanimal === id);
+      if (animal) {
+        setEspecie(animal.especie);
+        setDatanascimento(animal.datanascimento?.slice(0, 10) || '');
+        setStatus(animal.status);
+        setPesoatual(animal.pesoatual?.toString() || '');
+        setObservacoes(animal.observacoes || '');
+      }
     }
-  }
+  }, [id, animais]);
 
   async function salvar() {
     if (!especie.trim()) {
@@ -50,20 +40,9 @@ export default function FormAnimalScreen({ route, navigation }: any) {
       pesoatual: parseFloat(pesoatual) || null,
       observacoes: observacoes || null,
     };
-
-    if (id) {
-      const { error } = await supabase
-        .from('animal')
-        .update(dados)
-        .eq('idanimal', id);
-      if (error) Alert.alert('Erro', error.message);
-      else navigation.goBack();
-    } else {
-      const { error } = await supabase.from('animal').insert([dados]);
-      if (error) Alert.alert('Erro', error.message);
-      else navigation.goBack();
-    }
+    await salvarAnimal(dados, id);
     setLoading(false);
+    navigation.goBack();
   }
 
   return (

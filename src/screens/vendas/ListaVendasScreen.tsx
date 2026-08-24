@@ -1,35 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useVendas } from '../../hooks/useVendas';
 import { Button } from '../../components/Button';
-
-type Venda = {
-  idvenda: number;
-  datavenda: string;
-  valortotal: number;
-  statuspagamento: string;
-  Cliente: { nome: string };
-  Usuario: { nome: string };
-};
+import { useFocusEffect } from '@react-navigation/native';
+import { processQueue } from '../../services/sync';
 
 export default function ListaVendasScreen({ navigation }) {
-  const [vendas, setVendas] = useState<Venda[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { vendas, loading } = useVendas();
 
-  useEffect(() => {
-    carregarVendas();
-  }, []);
-
-  async function carregarVendas() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('venda')
-      .select('*, cliente(nome), usuario(nome)')
-      .order('datavenda', { ascending: false });
-    if (error) Alert.alert('Erro', error.message);
-    else setVendas(data || []);
-    setLoading(false);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      processQueue();
+    }, [])
+  );
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleString('pt-BR');
@@ -39,7 +22,7 @@ export default function ListaVendasScreen({ navigation }) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const renderItem = ({ item }: { item: Venda }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => navigation.navigate('DetalhesVenda', { id: item.idvenda })}
@@ -47,7 +30,7 @@ export default function ListaVendasScreen({ navigation }) {
       <View style={styles.cardContent}>
         <Text style={styles.id}>Venda #{item.idvenda}</Text>
         <Text style={styles.data}>{formatarData(item.datavenda)}</Text>
-        <Text style={styles.cliente}>Cliente: {item.Cliente?.nome || '—'}</Text>
+        <Text style={styles.cliente}>Cliente: {item.cliente?.nome || '—'}</Text>
         <Text style={styles.total}>{formatarMoeda(item.valortotal)}</Text>
         <Text style={styles.status}>Status: {item.statuspagamento}</Text>
       </View>

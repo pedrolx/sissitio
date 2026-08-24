@@ -1,32 +1,33 @@
-import React, { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native'
-import { supabase } from '../../lib/supabase'
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, isConnected } = useAuth();
 
   async function handleLogin() {
     if (!email || !password) {
-      Alert.alert('Atenção', 'Preencha email e senha')
-      return
+      Alert.alert('Atenção', 'Preencha email e senha');
+      return;
     }
-    setLoading(true)
 
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
-
-    if (error) {
-      Alert.alert('Erro no login', error.message)
-      setLoading(false)
-    } else if (data?.session) {
-      // Login bem-sucedido: navega para a área principal
-      navigation.replace('Main')  // ou navigation.navigate('Home') – replace evita voltar para login
+    if (!isConnected) {
+      Alert.alert('Sem conexão', 'Você precisa estar conectado à internet para fazer login.');
+      return;
     }
-    setLoading(false)
+
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigation.replace('Main');
+    } catch (error: any) {
+      Alert.alert('Erro no login', error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -52,14 +53,18 @@ export default function LoginScreen({ navigation }) {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
+        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Entrar</Text>}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('RecuperarSenha')}>
         <Text style={styles.link}>Esqueci minha senha</Text>
       </TouchableOpacity>
+
+      {!isConnected && (
+        <Text style={styles.offlineWarning}>⚠️ Modo offline – Login indisponível</Text>
+      )}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -112,4 +117,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontFamily: 'Inter',
   },
-})
+  offlineWarning: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#C17F59',
+    fontFamily: 'Inter',
+    fontWeight: 'bold',
+  },
+});

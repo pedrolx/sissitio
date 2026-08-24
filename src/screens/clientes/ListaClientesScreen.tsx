@@ -1,49 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { supabase } from '../../lib/supabase';
-import { Button } from '../../components/Button';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useClientes } from '../../hooks/useClientes';
+import { Button } from '../../components/Button';
+import { useFocusEffect } from '@react-navigation/native';
+import { processQueue } from '../../services/sync';
 
 type Cliente = {
   idcliente: number;
   nome: string;
   telefone: string;
   observacoes: string;
+  _pending?: boolean;
 };
 
 export default function ListaClientesScreen({ navigation }) {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { clientes, loading, excluirCliente } = useClientes();
 
-  useEffect(() => {
-    carregarClientes();
-  }, []);
-
-  async function carregarClientes() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('cliente')
-      .select('*')
-      .order('nome');
-    if (error) Alert.alert('Erro', error.message);
-    else setClientes(data || []);
-    setLoading(false);
-  }
-
-  async function excluirCliente(id: number) {
-    Alert.alert('Excluir', 'Tem certeza?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('cliente').delete().eq('idcliente', id);
-          if (error) Alert.alert('Erro', error.message);
-          else carregarClientes();
-        },
-      },
-    ]);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      processQueue();
+    }, [])
+  );
 
   const renderItem = ({ item }: { item: Cliente }) => (
     <View style={styles.card}>
@@ -53,6 +30,9 @@ export default function ListaClientesScreen({ navigation }) {
         <Text style={styles.observacao}>{item.observacoes?.substring(0, 50)}</Text>
       </View>
       <View style={styles.actions}>
+        {item._pending && (
+          <Text style={styles.pendingIcon}>⏳</Text>
+        )}
         <TouchableOpacity onPress={() => navigation.navigate('FormCliente', { id: item.idcliente })}>
           <Text style={styles.edit}>✏️</Text>
         </TouchableOpacity>
@@ -99,9 +79,9 @@ const styles = StyleSheet.create({
   nome: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C' },
   telefone: { fontSize: 14, color: '#8A8A8A', marginTop: 4 },
   observacao: { fontSize: 12, color: '#A9A9A9', marginTop: 4 },
-  actions: { flexDirection: 'row', gap: 12 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   edit: { fontSize: 20, marginRight: 8, color: '#3E7C59' },
   delete: { fontSize: 20, color: '#C17F59' },
+  pendingIcon: { fontSize: 20, marginRight: 8, color: '#FFA500' },
   loading: { textAlign: 'center', marginTop: 50, color: '#8A8A8A' },
 });
-

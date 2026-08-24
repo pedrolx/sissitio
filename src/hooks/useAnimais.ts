@@ -4,56 +4,56 @@ import { getLocalData, saveLocalData } from '../services/storage';
 import { enqueueOperation } from '../services/sync';
 import { useNetInfo } from './useNetInfo';
 
-const CACHE_KEY = '@clientes';
+const CACHE_KEY = '@animais';
 
-export function useClientes() {
-  const [clientes, setClientes] = useState<any[]>([]);
+export function useAnimais() {
+  const [animais, setAnimais] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isConnected } = useNetInfo();
 
   const carregar = useCallback(async () => {
     setLoading(true);
     const cached = await getLocalData<any[]>(CACHE_KEY);
-    if (cached) setClientes(cached);
+    if (cached) setAnimais(cached);
 
     if (isConnected) {
       const { data, error } = await supabase
-        .from('cliente')
+        .from('animal')
         .select('*')
-        .order('nome');
+        .order('especie');
       if (!error && data) {
         const cleanData = data.map(item => {
           const { _pending, ...rest } = item;
           return rest;
         });
-        setClientes(cleanData);
+        setAnimais(cleanData);
         await saveLocalData(CACHE_KEY, cleanData);
       }
     }
     setLoading(false);
   }, [isConnected]);
 
-  const salvarCliente = useCallback(async (cliente: any, id?: number) => {
+  const salvarAnimal = useCallback(async (animal: any, id?: number) => {
     const cached = await getLocalData<any[]>(CACHE_KEY) || [];
-    let newClientes: any[];
+    let newAnimais: any[];
     let tempId = Date.now();
     if (id) {
-      newClientes = cached.map(c =>
-        c.idcliente === id ? { ...c, ...cliente, _pending: true } : c
+      newAnimais = cached.map(a =>
+        a.idanimal === id ? { ...a, ...animal, _pending: true } : a
       );
     } else {
-      newClientes = [
+      newAnimais = [
         ...cached,
-        { ...cliente, idcliente: tempId, _pending: true },
+        { ...animal, idanimal: tempId, _pending: true },
       ];
     }
-    setClientes(newClientes);
-    await saveLocalData(CACHE_KEY, newClientes);
+    setAnimais(newAnimais);
+    await saveLocalData(CACHE_KEY, newAnimais);
 
     await enqueueOperation({
-      table: 'cliente',
+      table: 'animal',
       action: id ? 'update' : 'insert',
-      data: id ? { ...cliente, idcliente: id } : cliente,
+      data: id ? { ...animal, idanimal: id } : animal,
     });
 
     if (isConnected) {
@@ -63,16 +63,16 @@ export function useClientes() {
     carregar();
   }, [isConnected, carregar]);
 
-  const excluirCliente = useCallback(async (id: number) => {
+  const excluirAnimal = useCallback(async (id: number) => {
     const cached = await getLocalData<any[]>(CACHE_KEY) || [];
-    const newClientes = cached.filter(c => c.idcliente !== id);
-    setClientes(newClientes);
-    await saveLocalData(CACHE_KEY, newClientes);
+    const newAnimais = cached.filter(a => a.idanimal !== id);
+    setAnimais(newAnimais);
+    await saveLocalData(CACHE_KEY, newAnimais);
 
     await enqueueOperation({
-      table: 'cliente',
+      table: 'animal',
       action: 'delete',
-      data: { idcliente: id },
+      data: { idanimal: id },
     });
 
     if (isConnected) {
@@ -86,5 +86,5 @@ export function useClientes() {
     carregar();
   }, [carregar]);
 
-  return { clientes, loading, carregar, salvarCliente, excluirCliente };
+  return { animais, loading, carregar, salvarAnimal, excluirAnimal };
 }

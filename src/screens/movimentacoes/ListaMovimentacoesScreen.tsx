@@ -1,22 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import { useMovimentacoes } from '../../hooks/useMovimentacoes';
 import { Input } from '../../components/Input';
 import { Picker } from '@react-native-picker/picker';
-
-interface Movimentacao {
-  idmovimentacao: number;
-  datamovimentacao: string;
-  tipomovimentacao: string;
-  quantidade: number;
-  observacoes: string | null;
-  produto: { nome: string }[] | null;
-  animal: { especie: string }[] | null;
-}
+import { supabase } from '../../lib/supabase';
 
 export default function ListaMovimentacoesScreen() {
-  const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { movimentacoes, loading, carregar } = useMovimentacoes();
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroProduto, setFiltroProduto] = useState('');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
@@ -28,46 +18,27 @@ export default function ListaMovimentacoesScreen() {
     carregarProdutos();
   }, []);
 
-  useEffect(() => {
-    carregarMovimentacoes();
-  }, [filtroTipo, filtroProduto, filtroDataInicio, filtroDataFim]);
-
   async function carregarProdutos() {
     const { data } = await supabase.from('produto').select('idproduto, nome').order('nome');
     if (data) setProdutos(data);
   }
 
-  async function carregarMovimentacoes() {
-    setLoading(true);
-    let query = supabase
-      .from('movimentacao')
-      .select('*, produto(nome), animal(especie)')
-      .order('datamovimentacao', { ascending: false });
+  // O filtro é aplicado no carregamento do hook, então recarregamos
+  const aplicarFiltros = () => {
+    carregar();
+    setModalVisible(false);
+  };
 
-    if (filtroTipo !== 'todos') query = query.eq('tipomovimentacao', filtroTipo);
-    if (filtroProduto) query = query.eq('idproduto', parseInt(filtroProduto));
-    if (filtroDataInicio) query = query.gte('datamovimentacao', new Date(filtroDataInicio).toISOString());
-    if (filtroDataFim) {
-      const fim = new Date(filtroDataFim);
-      fim.setHours(23, 59, 59, 999);
-      query = query.lte('datamovimentacao', fim.toISOString());
-    }
-
-    const { data, error } = await query;
-    if (error) console.error(error);
-    else setMovimentacoes(data || []);
-    setLoading(false);
-  }
-
-  function limparFiltros() {
+  const limparFiltros = () => {
     setFiltroTipo('todos');
     setFiltroProduto('');
     setFiltroDataInicio('');
     setFiltroDataFim('');
     setModalVisible(false);
-  }
+    carregar();
+  };
 
-  const renderItem = ({ item }: { item: Movimentacao }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <Text style={styles.data}>{new Date(item.datamovimentacao).toLocaleString()}</Text>
       <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
@@ -112,7 +83,7 @@ export default function ListaMovimentacoesScreen() {
           <Input value={filtroDataFim} onChangeText={setFiltroDataFim} placeholder="2025-12-31" />
 
           <View style={styles.modalButtons}>
-            <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#3E7C59' }]} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#3E7C59' }]} onPress={aplicarFiltros}>
               <Text style={styles.modalButtonText}>Aplicar</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#C17F59' }]} onPress={limparFiltros}>
@@ -122,16 +93,7 @@ export default function ListaMovimentacoesScreen() {
         </View>
       </Modal>
 
-      {loading ? (
-        <Text style={styles.loading}>Carregando...</Text>
-      ) : (
-        <FlatList
-          data={movimentacoes}
-          keyExtractor={(item) => item.idmovimentacao.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
-      )}
+      {loading ? <Text style={styles.loading}>Carregando...</Text> : <FlatList data={movimentacoes} renderItem={renderItem} keyExtractor={(item) => item.idmovimentacao.toString()} />}
     </View>
   );
 }

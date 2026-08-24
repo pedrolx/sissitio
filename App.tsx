@@ -1,34 +1,34 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, StatusBar, View } from 'react-native';
-import { supabase } from './src/lib/supabase';
+import { StyleSheet, StatusBar, View, ActivityIndicator, Text } from 'react-native';
 import AppNavigator from './src/navigation';
+import { useAuth } from './src/hooks/useAuth';
+import { useSync } from './src/hooks/useSync';
+import { OfflineBanner } from './src/components/OfflineBanner';
+import Toast from 'react-native-toast-message';
 
 export default function App() {
-  const [isReady, setIsReady] = useState(false);
-  const [initialRoute, setInitialRoute] = useState<'Login' | 'Main'>('Login');
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setInitialRoute(session ? 'Main' : 'Login');
-      setIsReady(true);
-    });
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setInitialRoute(session ? 'Main' : 'Login');
-    });
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
+  useSync();
 
-  if (!isReady) return null;
+  const { loading, isAuthenticated } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F7F5EF" />
+        <ActivityIndicator size="large" color="#3E7C59" />
+        <Text style={styles.loadingText}>Carregando...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#F7F5EF" />
-        <AppNavigator initialRouteName={initialRoute} />
+        <OfflineBanner />  
+        <AppNavigator initialRouteName={isAuthenticated ? 'Main' : 'Login'} />
+        <Toast position="bottom" bottomOffset={20} />
       </View>
     </SafeAreaProvider>
   );
@@ -38,5 +38,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F5EF',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#F7F5EF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#8A8A8A',
+    fontFamily: 'Inter',
   },
 });

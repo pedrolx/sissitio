@@ -1,40 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import React from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useEstoque } from '../../hooks/useEstoque';
 
-interface EstoqueItem {
-  idestoque: number;
-  idproduto: number;
-  quantidadeatual: number;
-  produto: { nome: string; unidademedida: string }[] | null;
-}
+export default function ListaEstoqueScreen({ navigation }) {
+  const { estoque, loading } = useEstoque();
 
-interface Props {
-  navigation: any;
-}
-
-export default function ListaEstoqueScreen({ navigation }: Props) {
-  const [itens, setItens] = useState<EstoqueItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    carregarEstoque();
-  }, []);
-
-  async function carregarEstoque() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('estoque')
-      .select('*, produto(nome, unidademedida)');
-    if (error) {
-      Alert.alert('Erro', error.message);
-    } else {
-      setItens(data || []);
-    }
-    setLoading(false);
-  }
-
-  const renderItem = ({ item }: { item: EstoqueItem }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <Text style={styles.nome}>{item.produto?.[0]?.nome || '—'}</Text>
       <Text>Quantidade: {item.quantidadeatual} {item.produto?.[0]?.unidademedida || ''}</Text>
@@ -54,7 +25,7 @@ export default function ListaEstoqueScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {loading ? <Text>Carregando...</Text> : <FlatList data={itens} renderItem={renderItem} keyExtractor={(item) => item.idestoque.toString()} />}
+      {loading ? <Text>Carregando...</Text> : <FlatList data={estoque} renderItem={renderItem} keyExtractor={(item) => item.idestoque.toString()} />}
     </View>
   );
 }

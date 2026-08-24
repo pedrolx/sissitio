@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import { supabase } from '../../lib/supabase';
 import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
+import { processQueue } from '../../services/sync';
+import { useFocusEffect } from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -47,6 +49,12 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   useEffect(() => {
     carregarDados();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      processQueue();
+    }, [])
+  );
 
   async function carregarDados() {
     setLoading(true);

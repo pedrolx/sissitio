@@ -1,64 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useAnimais } from '../../hooks/useAnimais';
 import { Button } from '../../components/Button';
+import { useFocusEffect } from '@react-navigation/native';
+import { processQueue } from '../../services/sync';
 
-interface Animal {
-  idanimal: number;
-  especie: string;
-  datanascimento: string | null;
-  status: string;
-  pesoatual: number | null;
-  observacoes: string | null;
-}
+export default function ListaAnimaisScreen({ navigation }) {
+  const { animais, loading, excluirAnimal } = useAnimais();
 
-interface Props {
-  navigation: any;
-}
-
-export default function ListaAnimaisScreen({ navigation }: Props) {
-  const [animais, setAnimais] = useState<Animal[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    carregarAnimais();
-  }, []);
-
-  async function carregarAnimais() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('animal')
-      .select('*')
-      .order('especie');
-    if (error) {
-      Alert.alert('Erro', error.message);
-    } else {
-      setAnimais(data || []);
-    }
-    setLoading(false);
-  }
-
-  async function excluirAnimal(id: number) {
-    Alert.alert('Excluir', 'Tem certeza? Esta ação não pode ser desfeita.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('animal').delete().eq('idanimal', id);
-          if (error) Alert.alert('Erro', error.message);
-          else carregarAnimais();
-        },
-      },
-    ]);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      processQueue();
+    }, [])
+  );
 
   const formatarData = (data: string | null) => {
     if (!data) return '—';
     return new Date(data).toLocaleDateString('pt-BR');
   };
 
-  const renderItem = ({ item }: { item: Animal }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('DetalhesAnimal', { id: item.idanimal })}>
       <View style={styles.cardContent}>
         <Text style={styles.especie}>{item.especie}</Text>
@@ -66,7 +27,12 @@ export default function ListaAnimaisScreen({ navigation }: Props) {
         <Text style={styles.detalhe}>Status: {item.status}</Text>
         {item.pesoatual ? <Text style={styles.detalhe}>Peso: {item.pesoatual} kg</Text> : null}
       </View>
-      <Text style={styles.detailIcon}>👉</Text>
+      <View style={styles.actions}>
+        {item._pending && (
+          <Text style={styles.pendingIcon}>⏳</Text>
+        )}
+        <Text style={styles.detailIcon}>👉</Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -106,5 +72,7 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   especie: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C' },
   detalhe: { fontSize: 14, color: '#8A8A8A', marginTop: 4 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  pendingIcon: { fontSize: 20, marginRight: 8, color: '#FFA500' },
   loading: { textAlign: 'center', marginTop: 50, color: '#8A8A8A' },
 });

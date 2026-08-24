@@ -9,7 +9,7 @@ export function useSync(autoSync = true) {
     processQueue();
 
     if (autoSync) {
-      stopRef.current = startPeriodicSync(60000); // a cada 60s
+      stopRef.current = startPeriodicSync(30000); // a cada 30s
     }
     return () => {
       if (stopRef.current) stopRef.current();
