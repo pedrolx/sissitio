@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { clearAllCache } from '../../services/storage';
 import { getPendingQueue, processQueue } from '../../services/sync';
+import { formatDateBR } from '../../utils/dateUtils';
 
 export default function PerfilScreen({ navigation }) {
   const [user, setUser] = useState<User | null>(null);
@@ -77,10 +78,6 @@ export default function PerfilScreen({ navigation }) {
     );
   }
 
-  function formatarDataBR(created_at: string): React.ReactNode {
-    throw new Error('Function not implemented.');
-  }
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>MEU PERFIL</Text>
@@ -93,7 +90,7 @@ export default function PerfilScreen({ navigation }) {
 
         <Text style={styles.label}>Criado em:</Text>
         <Text style={styles.value}>
-          {user?.created_at ? formatarDataBR(user.created_at) : '—'}
+          {user?.created_at ? formatDateBR(user.created_at) : '—'}
         </Text>
       </View>
 

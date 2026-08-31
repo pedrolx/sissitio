@@ -11,7 +11,7 @@ import { useAnimais } from '../../hooks/useAnimais';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { formatarDataBR, parseDateBRtoISO } from '../../utils/dateUtils';
+import { formatDateBR, parseDateBR, formatDateISO } from '../../utils/dateUtils';
 
 export default function FormAnimalScreen({ route, navigation }) {
   const { id } = route.params || {};
@@ -34,7 +34,7 @@ export default function FormAnimalScreen({ route, navigation }) {
         setEspecie(animal.especie);
         // Se tiver data, converte para o formato BR para exibir
         if (animal.datanascimento) {
-          setDatanascimento(formatarDataBR(animal.datanascimento));
+          setDatanascimento(formatDateBR(animal.datanascimento));
           setTempDate(new Date(animal.datanascimento));
         }
         setStatus(animal.status);
@@ -54,12 +54,13 @@ export default function FormAnimalScreen({ route, navigation }) {
     // Converte a data do formato BR para ISO antes de salvar
     let dataISO = null;
     if (datanascimento) {
-      dataISO = parseDateBRtoISO(datanascimento);
-      if (!dataISO) {
+      const parsed = parseDateBR(datanascimento);
+      if (!parsed) {
         Alert.alert('Erro', 'Data de nascimento inválida. Use o formato DD/MM/AAAA.');
         setLoading(false);
         return;
       }
+      dataISO = formatDateISO(parsed);
     }
 
     const dados = {
@@ -81,7 +82,7 @@ export default function FormAnimalScreen({ route, navigation }) {
     if (selectedDate) {
       setTempDate(selectedDate);
       // Atualiza o campo com a data no formato BR
-      setDatanascimento(formatarDataBR(selectedDate));
+      setDatanascimento(formatDateBR(selectedDate));
     }
   };
 

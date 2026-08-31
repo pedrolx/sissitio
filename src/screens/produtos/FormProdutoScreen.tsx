@@ -58,9 +58,9 @@ export default function FormProdutoScreen({ route, navigation }) {
       <Text style={styles.label}>Unidade de Medida *</Text>
       <Input value={unidademedida} onChangeText={setUnidademedida} placeholder="kg, un, dúzia, litro" />
       <Text style={styles.label}>Preço Base (R$)</Text>
-      <Input value={precobase} onChangeText={setPrecobase} keyboardType="numeric" placeholder="0.00" />
+      <Input value={precobase} onChangeText={setPrecobase} keyboardType="numeric" placeholder="* Custo real de produção (ex: R$ 5,00 por dúzia)" />
       <Text style={styles.label}>Preço Sugerido (R$)</Text>
-      <Input value={precosugerido} onChangeText={setPrecosugerido} keyboardType="numeric" placeholder="0.00" />
+      <Input value={precosugerido} onChangeText={setPrecosugerido} keyboardType="numeric" placeholder="* Valor recomendado para venda (ex: R$ 10,50 por dúzia)" />
       <Button title={id ? 'Atualizar' : 'Salvar'} onPress={salvar} loading={loading} />
     </View>
   );

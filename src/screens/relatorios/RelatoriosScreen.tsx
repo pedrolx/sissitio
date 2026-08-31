@@ -14,7 +14,6 @@ import { Dimensions } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
-import { formatDateISO } from '../../utils/dateUtils';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
