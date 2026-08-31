@@ -4,6 +4,7 @@ import { useMovimentacoes } from '../../hooks/useMovimentacoes';
 import { Input } from '../../components/Input';
 import { Picker } from '@react-native-picker/picker';
 import { supabase } from '../../lib/supabase';
+import { formatDateBR } from '../../utils/dateUtils';
 
 export default function ListaMovimentacoesScreen() {
   const { movimentacoes, loading, carregar } = useMovimentacoes();
@@ -40,7 +41,7 @@ export default function ListaMovimentacoesScreen() {
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
-      <Text style={styles.data}>{new Date(item.datamovimentacao).toLocaleString()}</Text>
+      <Text style={styles.data}>{formatDateBR(item.datamovimentacao, true)}</Text>
       <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
       <Text>Produto: {item.produto?.[0]?.nome || '—'}</Text>
       <Text>Animal: {item.animal?.[0]?.especie || '—'}</Text>

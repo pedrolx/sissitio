@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 import { calcularRateio } from '../../services/rateio';
+import { formatDateBR } from '../../utils/dateUtils';
 
 
 interface Venda {
@@ -67,10 +68,6 @@ export default function DetalhesVendaScreen({ route }: any) {
     setLoading(false);
   }
 
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleString('pt-BR');
-  };
-
   const formatarMoeda = (valor: number) => {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
@@ -84,7 +81,7 @@ export default function DetalhesVendaScreen({ route }: any) {
 
       <View style={styles.infoCard}>
         <Text style={styles.label}>Data:</Text>
-        <Text style={styles.value}>{formatarData(venda.datavenda)}</Text>
+        <Text style={styles.value}>{formatDateBR(venda.datavenda, true)}</Text>
 
         <Text style={styles.label}>Cliente:</Text>
         <Text style={styles.value}>{venda.cliente?.[0]?.nome || '—'}</Text>

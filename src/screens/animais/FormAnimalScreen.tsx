@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'rea
 import { useAnimais } from '../../hooks/useAnimais';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import { formatDateISO } from '../../utils/dateUtils';
 
 export default function FormAnimalScreen({ route, navigation }) {
   const { id } = route.params || {};
@@ -35,7 +36,7 @@ export default function FormAnimalScreen({ route, navigation }) {
     setLoading(true);
     const dados = {
       especie,
-      datanascimento: datanascimento || null,
+      datanascimento: datanascimento ? formatDateISO(datanascimento) : null,
       status,
       pesoatual: parseFloat(pesoatual) || null,
       observacoes: observacoes || null,
@@ -54,7 +55,7 @@ export default function FormAnimalScreen({ route, navigation }) {
       <Input
         value={datanascimento}
         onChangeText={setDatanascimento}
-        placeholder="2024-01-15"
+        placeholder="DD/MM/AAAA"
         keyboardType="default"
       />
 

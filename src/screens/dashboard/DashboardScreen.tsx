@@ -13,6 +13,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { processQueue } from '../../services/sync';
 import { useFocusEffect } from '@react-navigation/native';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -124,17 +125,6 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   const onRefresh = () => {
     setRefreshing(true);
     carregarDados();
-  };
-
-  const formatarData = (data: string | null | undefined): string => {
-    if (!data) return '';
-    const d = new Date(data);
-    return d.toLocaleString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-    });
   };
 
   if (loading) {
@@ -250,7 +240,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           ) : (
             movimentacoes.map((item, idx) => (
               <Text key={idx} style={styles.movimento}>
-                {formatarData(item.datamovimentacao)} – {item.tipomovimentacao} –{' '}
+                {formatDateBR(item.datamovimentacao, true)} – {item.tipomovimentacao} –{' '}
                 {item.produto?.[0]?.nome || 'Animal'} {item.quantidade ? `(${item.quantidade})` : ''}
               </Text>
             ))

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
+import { formatDateBR } from '../../utils/dateUtils';
 
 // Interface com os nomes EXATOS do banco (minúsculo)
 interface Animal {
@@ -91,7 +92,7 @@ export default function DetalhesAnimalScreen({ route, navigation }: any) {
           Espécie: <Text style={styles.value}>{animal.especie}</Text>
         </Text>
         <Text style={styles.label}>
-          Nascimento: <Text style={styles.value}>{animal.datanascimento || '—'}</Text>
+          Nascimento: <Text style={styles.value}>{formatDateBR(animal.datanascimento)}</Text>
         </Text>
         <Text style={styles.label}>
           Status: <Text style={styles.value}>{animal.status}</Text>

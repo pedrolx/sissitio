@@ -77,6 +77,10 @@ export default function PerfilScreen({ navigation }) {
     );
   }
 
+  function formatarDataBR(created_at: string): React.ReactNode {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>MEU PERFIL</Text>
@@ -89,7 +93,7 @@ export default function PerfilScreen({ navigation }) {
 
         <Text style={styles.label}>Criado em:</Text>
         <Text style={styles.value}>
-          {user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
+          {user?.created_at ? formatarDataBR(user.created_at) : '—'}
         </Text>
       </View>
 

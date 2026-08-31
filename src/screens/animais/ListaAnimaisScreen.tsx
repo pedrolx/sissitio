@@ -4,6 +4,7 @@ import { useAnimais } from '../../hooks/useAnimais';
 import { Button } from '../../components/Button';
 import { useFocusEffect } from '@react-navigation/native';
 import { processQueue } from '../../services/sync';
+import { formatDateBR } from '../../utils/dateUtils';
 
 export default function ListaAnimaisScreen({ navigation }) {
   const { animais, loading, excluirAnimal } = useAnimais();
@@ -14,16 +15,11 @@ export default function ListaAnimaisScreen({ navigation }) {
     }, [])
   );
 
-  const formatarData = (data: string | null) => {
-    if (!data) return '—';
-    return new Date(data).toLocaleDateString('pt-BR');
-  };
-
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('DetalhesAnimal', { id: item.idanimal })}>
       <View style={styles.cardContent}>
         <Text style={styles.especie}>{item.especie}</Text>
-        <Text style={styles.detalhe}>Nascimento: {formatarData(item.datanascimento)}</Text>
+        <Text style={styles.detalhe}>Nascimento: {formatDateBR(item.datanascimento)}</Text>
         <Text style={styles.detalhe}>Status: {item.status}</Text>
         {item.pesoatual ? <Text style={styles.detalhe}>Peso: {item.pesoatual} kg</Text> : null}
       </View>

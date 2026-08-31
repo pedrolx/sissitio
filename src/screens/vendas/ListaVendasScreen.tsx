@@ -4,6 +4,7 @@ import { useVendas } from '../../hooks/useVendas';
 import { Button } from '../../components/Button';
 import { useFocusEffect } from '@react-navigation/native';
 import { processQueue } from '../../services/sync';
+import { formatDateBR } from '../../utils/dateUtils';
 
 export default function ListaVendasScreen({ navigation }) {
   const { vendas, loading } = useVendas();
@@ -13,10 +14,6 @@ export default function ListaVendasScreen({ navigation }) {
       processQueue();
     }, [])
   );
-
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleString('pt-BR');
-  };
 
   const formatarMoeda = (valor: number) => {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -29,7 +26,7 @@ export default function ListaVendasScreen({ navigation }) {
     >
       <View style={styles.cardContent}>
         <Text style={styles.id}>Venda #{item.idvenda}</Text>
-        <Text style={styles.data}>{formatarData(item.datavenda)}</Text>
+        <Text style={styles.data}>{formatDateBR(item.datavenda, true)}</Text>
         <Text style={styles.cliente}>Cliente: {item.cliente?.nome || '—'}</Text>
         <Text style={styles.total}>{formatarMoeda(item.valortotal)}</Text>
         <Text style={styles.status}>Status: {item.statuspagamento}</Text>
