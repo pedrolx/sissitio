@@ -5,11 +5,10 @@ export function useSync(autoSync = true) {
   const stopRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Processar imediatamente ao montar
     processQueue();
 
     if (autoSync) {
-      stopRef.current = startPeriodicSync(30000); // a cada 30s
+      stopRef.current = startPeriodicSync(30000);
     }
     return () => {
       if (stopRef.current) stopRef.current();

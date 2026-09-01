@@ -17,7 +17,7 @@ export function useAuth() {
       setLoading(false);
     });
 
-    // Escutar mudanças de autenticação (login/logout)
+    // Escuta mudanças de autenticação (login/logout)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -33,7 +33,7 @@ export function useAuth() {
 
   // Função para login
   const login = async (email: string, password: string) => {
-    // Se estiver offline, não tenta fazer login (evita erro)
+    // Se estiver offline, não tenta fazer login
     if (!isConnected) {
       throw new Error('Você está offline. Conecte-se à internet para fazer login.');
     }
@@ -48,7 +48,7 @@ export function useAuth() {
     if (error) throw error;
   };
 
-  // Função para verificar se há sessão mesmo offline (para navegação)
+  // Função para verificar se há sessão mesmo offline
   const isAuthenticated = !!session;
 
   return {

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { processQueue } from '../services/sync';
 import { useNetInfo } from './useNetInfo';

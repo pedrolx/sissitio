@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Telas
 import RelatoriosScreen from '../screens/relatorios/RelatoriosScreen';
 import PerfilScreen from '../screens/perfil/PerfilScreen';
 import LoginScreen from '../screens/auth/LoginScreen';

@@ -8,7 +8,6 @@ export function useNetInfo() {
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
       setIsConnected(state.isConnected ?? false);
     });
-    // Check initial state
     NetInfo.fetch().then(state => {
       setIsConnected(state.isConnected ?? false);
     });

@@ -1,4 +1,3 @@
-// src/screens/produtos/ListaProdutosScreen.tsx
 import React, { useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useProdutos } from '../../hooks/useProdutos';
@@ -23,7 +22,7 @@ export default function ListaProdutosScreen({ navigation }) {
         <Text>R$ {item.precobase?.toFixed(2)}</Text>
       </View>
       <View style={styles.actions}>
-        {/* Ícone de pendência (aparece se o item ainda não foi sincronizado) */}
+        {/* Ícone de pendência que aparece se o item ainda não foi sincronizado */}
         {item._pending && (
           <Text style={styles.pendingIcon}>⏳</Text>
         )}

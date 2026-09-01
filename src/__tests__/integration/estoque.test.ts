@@ -157,10 +157,8 @@ describe('Testes de Estoque (Integração)', () => {
     const quantidadeSaida = 5;
     const novaQuantidade = (estoqueAtual?.quantidadeatual || 0) - quantidadeSaida;
 
-    // Não deve atualizar se for negativo (aplicação deve impedir)
+    // Não deve atualizar se for negativo
     if (novaQuantidade < 0) {
-      // Não executamos a atualização, apenas verificamos que a lógica impede
-      // O teste passa se a condição for capturada
       expect(novaQuantidade).toBeLessThan(0);
     }
   });

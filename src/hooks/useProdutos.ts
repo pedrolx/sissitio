@@ -1,4 +1,3 @@
-// src/hooks/useProdutos.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocalData, saveLocalData } from '../services/storage';
@@ -11,7 +10,7 @@ export function useProdutos() {
   const [produtos, setProdutos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isConnected } = useNetInfo();
-  const isSaving = useRef(false); // trava para evitar duplicação
+  const isSaving = useRef(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -36,7 +35,7 @@ export function useProdutos() {
   }, [isConnected]);
 
   const salvarProduto = useCallback(async (produto: any, id?: number) => {
-    if (isSaving.current) return; // previne chamadas simultâneas
+    if (isSaving.current) return;
     isSaving.current = true;
 
     try {

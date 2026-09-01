@@ -1,14 +1,10 @@
-// src/services/rateio.ts
-
-// Mapeamento de categorias para rateio
 // 1 = 100% para Jane, 0.5 = 50% para cada
 const CATEGORIAS_RATEIO: Record<string, number> = {
   'hortaliça': 1,
   'legume': 1,
   'frango': 1,
   'peixe': 1,
-  'ovo': 1,
-  // adicione outras categorias conforme necessário
+  'ovos': 1,
   // para as demais, o padrão é 0.5 (50%)
 };
 

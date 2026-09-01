@@ -31,7 +31,6 @@ describe('Testes de Vendas (Integração)', () => {
   });
 
   afterAll(async () => {
-    // Limpar dados criados (ordem correta)
     if (vendaId) {
       // Deletar itens, movimentações e venda
       await supabase.from('itemvenda').delete().eq('idvenda', vendaId);
@@ -51,11 +50,11 @@ describe('Testes de Vendas (Integração)', () => {
     expect(clienteId).not.toBeNull();
     expect(produtoId).not.toBeNull();
 
-    // Buscar usuário autenticado (ou usar um fixo se tiver)
+    // Buscar usuário autenticado
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
 
-    // 1. Criar venda
+    // Criar venda
     const { data: venda, error: vendaError } = await supabase
       .from('venda')
       .insert([
@@ -74,7 +73,7 @@ describe('Testes de Vendas (Integração)', () => {
     expect(venda).not.toBeNull();
     vendaId = venda?.idvenda as number;
 
-    // 2. Inserir item
+    // Inserir item
     const { error: itemError } = await supabase.from('itemvenda').insert([
       {
         idvenda: vendaId,
@@ -87,7 +86,7 @@ describe('Testes de Vendas (Integração)', () => {
 
     expect(itemError).toBeNull();
 
-    // 3. Atualizar estoque (diminuir)
+    // Atualizar estoque (diminuir)
     const { data: estoqueAtual, error: buscaEstoque } = await supabase
       .from('estoque')
       .select('quantidadeatual')
@@ -105,7 +104,7 @@ describe('Testes de Vendas (Integração)', () => {
 
     expect(updateEstoque).toBeNull();
 
-    // 4. Registrar movimentação de saída
+    // Registrar movimentação de saída
     const { error: movError } = await supabase.from('movimentacao').insert([
       {
         idproduto: produtoId,

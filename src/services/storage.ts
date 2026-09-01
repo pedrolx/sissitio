@@ -29,7 +29,7 @@ export async function removeLocalData(key: string): Promise<void> {
   }
 }
 
-// Limpar todo o cache (usar com cuidado)
+// Limpar todo o cache
 export async function clearAllCache(): Promise<void> {
   try {
     await AsyncStorage.clear();

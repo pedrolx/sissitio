@@ -1,4 +1,3 @@
-// src/hooks/useEstoque.ts
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocalData, saveLocalData } from '../services/storage';
@@ -18,7 +17,6 @@ export function useEstoque() {
     if (cached) setEstoque(cached);
 
     if (isConnected) {
-      // Inclui categoria no select
       const { data, error } = await supabase
         .from('estoque')
         .select('*, produto(nome, categoria, unidademedida)')

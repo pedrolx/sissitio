@@ -12,12 +12,11 @@ import { supabase } from '../../lib/supabase';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
-// Interfaces – Supabase retorna arrays para relações
+// Interfaces
 interface RelatorioEstoque {
   nome: string;
   quantidadeatual: number;
@@ -109,7 +108,7 @@ export default function RelatoriosScreen() {
     }
   };
 
-  // ---------- FUNÇÕES DE CARREGAMENTO (CORRIGIDAS) ----------
+  // ---------- FUNÇÕES DE CARREGAMENTO ----------
 
   const carregarEstoque = async () => {
     const { data, error } = await supabase
@@ -241,7 +240,7 @@ export default function RelatoriosScreen() {
     setAnimais({ totalVivos, totalAbatidos, totalVendidos, pesoMedio, especies, evolucao });
   };
 
-  // ---------- RENDERIZAÇÃO (MANTIDA) ----------
+  // ---------- RENDERIZAÇÃO ----------
 
   const renderPeriodoSelector = () => (
     <View style={styles.periodoContainer}>

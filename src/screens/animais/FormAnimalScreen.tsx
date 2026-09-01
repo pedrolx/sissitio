@@ -23,7 +23,6 @@ export default function FormAnimalScreen({ route, navigation }) {
   const [observacoes, setObservacoes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Estado para o DatePicker
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
 
@@ -32,7 +31,6 @@ export default function FormAnimalScreen({ route, navigation }) {
       const animal = animais.find(a => a.idanimal === id);
       if (animal) {
         setEspecie(animal.especie);
-        // Se tiver data, converte para o formato BR para exibir
         if (animal.datanascimento) {
           setDatanascimento(formatDateBR(animal.datanascimento));
           setTempDate(new Date(animal.datanascimento));
@@ -51,7 +49,6 @@ export default function FormAnimalScreen({ route, navigation }) {
     }
     setLoading(true);
 
-    // Converte a data do formato BR para ISO antes de salvar
     let dataISO = null;
     if (datanascimento) {
       const parsed = parseDateBR(datanascimento);
@@ -76,12 +73,10 @@ export default function FormAnimalScreen({ route, navigation }) {
     navigation.goBack();
   }
 
-  // Ao selecionar uma data no DatePicker
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
       setTempDate(selectedDate);
-      // Atualiza o campo com a data no formato BR
       setDatanascimento(formatDateBR(selectedDate));
     }
   };

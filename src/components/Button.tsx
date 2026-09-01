@@ -10,7 +10,7 @@ interface ButtonProps {
 }
 
 export function Button({ title, onPress, loading, variant = 'primary', disabled }: ButtonProps) {
-  let bgColor = '#3E7C59'; // primary
+  let bgColor = '#3E7C59';
   if (variant === 'secondary') bgColor = '#C17F59';
   if (variant === 'danger') bgColor = '#C17F59';
 

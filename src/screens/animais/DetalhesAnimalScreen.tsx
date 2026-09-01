@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/Button';
 import { formatDateBR } from '../../utils/dateUtils';
 
-// Interface com os nomes EXATOS do banco (minúsculo)
 interface Animal {
   idanimal: number;
   especie: string;
@@ -14,7 +13,6 @@ interface Animal {
   observacoes: string | null;
 }
 
-// Tipagem das props
 interface Props {
   route: { params: { id: number } };
   navigation: any;

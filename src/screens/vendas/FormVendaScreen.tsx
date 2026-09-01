@@ -41,7 +41,7 @@ export default function FormVendaScreen({ navigation }) {
     const [desconto, setDesconto] = useState('0');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Estados para os modais de input (quantidade/valor)
+    // Estados para os modais de input
     const [inputModalVisible, setInputModalVisible] = useState(false);
     const [inputModalType, setInputModalType] = useState<'quantidade' | 'valor'>('quantidade');
     const [inputModalTitle, setInputModalTitle] = useState('');
@@ -178,7 +178,7 @@ export default function FormVendaScreen({ navigation }) {
         let vendaId: number | null = null;
 
         try {
-            // 1. Inserir cabeçalho da venda
+            // Inserir cabeçalho da venda
             const { data: venda, error: vendaError } = await supabase
                 .from('venda')
                 .insert({
@@ -194,7 +194,7 @@ export default function FormVendaScreen({ navigation }) {
             if (vendaError) throw new Error(`Erro ao criar venda: ${vendaError.message}`);
             vendaId = venda.idvenda;
 
-            // 2. Processar cada item
+            // Processar cada item
             for (const item of itens) {
                 if (item.tipo === 'produto') {
                     // Inserir item
@@ -261,10 +261,10 @@ export default function FormVendaScreen({ navigation }) {
             navigation.goBack();
 
         } catch (error: any) {
-            // Em caso de erro, tentamos excluir a venda para não ficar inconsistente
+            // Em caso de erro, excluir a venda para não ficar inconsistente
             if (vendaId) {
                 await supabase.from('venda').delete().eq('idvenda', vendaId);
-                // Também limpar itens e movimentações associadas (caso tenham sido criadas)
+                // Também limpar itens e movimentações associadas
                 await supabase.from('itemvenda').delete().eq('idvenda', vendaId);
                 await supabase.from('movimentacao').delete().eq('idvenda', vendaId);
             }
@@ -354,7 +354,7 @@ export default function FormVendaScreen({ navigation }) {
         </Modal>
     );
 
-    // Modal de input (quantidade/valor)
+    // Modal de input
     const renderInputModal = () => (
         <Modal visible={inputModalVisible} transparent animationType="fade">
             <View style={styles.inputModalOverlay}>

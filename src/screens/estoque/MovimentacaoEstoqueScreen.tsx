@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
@@ -19,7 +19,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) 
   const [loading, setLoading] = useState(false);
   const [loadingProdutos, setLoadingProdutos] = useState(true);
 
-  // Carregar lista de produtos
   useEffect(() => {
     carregarProdutos();
   }, []);

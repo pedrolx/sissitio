@@ -18,7 +18,6 @@ import { formatDateBR } from '../../utils/dateUtils';
 const screenWidth = Dimensions.get('window').width - 32;
 
 // ========== INTERFACES ==========
-// O Supabase retorna arrays para relações
 interface Movimentacao {
   idmovimentacao: number;
   datamovimentacao: string;
@@ -56,7 +55,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   async function carregarDados() {
     setLoading(true);
     try {
-      // 1. Últimas 3 movimentações – agora incluindo animal(especie, observacoes)
+      // Últimas 3 movimentações
       const { data: movData } = await supabase
         .from('movimentacao')
         .select('*, produto(nome), animal(especie, observacoes)')
@@ -64,7 +63,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         .limit(3);
       setMovimentacoes(movData || []);
 
-      // 2. Total de vendas de hoje
+      // Total de vendas de hoje
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       const amanha = new Date(hoje);
@@ -77,7 +76,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       const totalHoje = vendasHoje?.reduce((sum, v) => sum + v.valortotal, 0) || 0;
       setTotalVendasHoje(totalHoje);
 
-      // 3. Total de vendas do mês
+      // Total de vendas do mês
       const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
       const { data: vendasMes } = await supabase
         .from('venda')
@@ -86,14 +85,14 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       const totalMes = vendasMes?.reduce((sum, v) => sum + v.valortotal, 0) || 0;
       setTotalVendasMes(totalMes);
 
-      // 4. Produtos com estoque baixo (menos de 5)
+      // Produtos com estoque baixo (menos de 5)
       const { data: estoque } = await supabase
         .from('estoque')
         .select('quantidadeatual, produto(nome, unidademedida)')
         .lt('quantidadeatual', 5);
       setProdutosBaixo(estoque || []);
 
-      // 5. Produtos mais vendidos (Top 5)
+      // Produtos mais vendidos (Top 5)
       const { data: maisVendidos } = await supabase
         .from('itemvenda')
         .select('idproduto, quantidade, produto(nome)')
@@ -231,7 +230,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           )}
         </View>
 
-        {/* Últimas movimentações – agora com animal */}
+        {/* Últimas movimentações */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🔄 Últimas Movimentações</Text>
           {movimentacoes.length === 0 ? (

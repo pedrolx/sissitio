@@ -32,7 +32,7 @@ describe('Testes de Produtos (Integração)', () => {
 
         produtoId = data?.idproduto as number;
 
-        // Criar estoque manualmente (já que a API não cria automaticamente)
+        // Criar estoque manualmente
         const { error: insertEstoque } = await supabase
             .from('estoque')
             .insert([{ idproduto: produtoId, quantidadeatual: 0 }]);
@@ -44,7 +44,7 @@ describe('Testes de Produtos (Integração)', () => {
             .from('estoque')
             .select('quantidadeatual')
             .eq('idproduto', produtoId)
-            .maybeSingle(); // usar maybeSingle para evitar erro se não encontrar
+            .maybeSingle();
 
         expect(estoqueError).toBeNull();
         expect(estoque).not.toBeNull();

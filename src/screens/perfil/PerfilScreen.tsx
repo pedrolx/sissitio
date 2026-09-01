@@ -28,15 +28,15 @@ export default function PerfilScreen({ navigation }) {
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      // 1. Verificar se há operações pendentes
+      // Verifica se há operações pendentes
       const queue = await getPendingQueue();
       if (queue.length > 0) {
-        // 2. Tentar processar a fila (se estiver online)
+        // Tenta processar a fila se estiver online
         await processQueue();
-        // Verificar novamente se ainda há pendências
+        // Verifica novamente se ainda há pendências
         const remaining = await getPendingQueue();
         if (remaining.length > 0) {
-          // Ainda há pendências: perguntar ao usuário
+          // Se ainda há pendências, pergunta ao usuário
           Alert.alert(
             'Dados não sincronizados',
             `Você tem ${remaining.length} operações pendentes. Deseja sair mesmo assim? Os dados serão perdidos.`,
