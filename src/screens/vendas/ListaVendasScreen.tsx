@@ -27,7 +27,7 @@ export default function ListaVendasScreen({ navigation }) {
       <View style={styles.cardContent}>
         <Text style={styles.id}>Venda #{item.idvenda}</Text>
         <Text style={styles.data}>{formatDateBR(item.datavenda, true)}</Text>
-        <Text style={styles.cliente}>Cliente: {item.cliente?.nome || '—'}</Text>
+        <Text style={styles.cliente}>Cliente: {item.cliente?.nome || 'Cliente removido'}</Text>
         <Text style={styles.total}>{formatarMoeda(item.valortotal)}</Text>
         <Text style={styles.status}>Status: {item.statuspagamento}</Text>
       </View>

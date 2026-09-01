@@ -19,6 +19,10 @@ export default function ListaAnimaisScreen({ navigation }) {
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('DetalhesAnimal', { id: item.idanimal })}>
       <View style={styles.cardContent}>
         <Text style={styles.especie}>{item.especie}</Text>
+        {/* Exibe o nome do animal (observações) se existir */}
+        {item.observacoes ? (
+          <Text style={styles.nomeAnimal}>🐾 {item.observacoes}</Text>
+        ) : null}
         <Text style={styles.detalhe}>Nascimento: {formatDateBR(item.datanascimento)}</Text>
         <Text style={styles.detalhe}>Status: {item.status}</Text>
         {item.pesoatual ? <Text style={styles.detalhe}>Peso: {item.pesoatual} kg</Text> : null}
@@ -67,6 +71,7 @@ const styles = StyleSheet.create({
   },
   cardContent: { flex: 1 },
   especie: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C' },
+  nomeAnimal: { fontSize: 14, color: '#3E7C59', fontStyle: 'italic', marginTop: 2 },
   detalhe: { fontSize: 14, color: '#8A8A8A', marginTop: 4 },
   actions: { flexDirection: 'row', alignItems: 'center' },
   pendingIcon: { fontSize: 20, marginRight: 8, color: '#FFA500' },

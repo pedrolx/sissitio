@@ -1,5 +1,5 @@
 // src/hooks/useProdutos.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocalData, saveLocalData } from '../services/storage';
 import { enqueueOperation } from '../services/sync';
@@ -11,24 +11,19 @@ export function useProdutos() {
   const [produtos, setProdutos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isConnected } = useNetInfo();
+  const isSaving = useRef(false); // trava para evitar duplicação
 
-  // Carregar dados: primeiro do cache, depois do servidor se online
   const carregar = useCallback(async () => {
     setLoading(true);
-    // 1. Carregar do cache local (já pode ter _pending)
     const cached = await getLocalData<any[]>(CACHE_KEY);
-    if (cached) {
-      setProdutos(cached);
-    }
+    if (cached) setProdutos(cached);
 
-    // 2. Se online, buscar do Supabase e atualizar cache
     if (isConnected) {
       const { data, error } = await supabase
         .from('produto')
         .select('*')
         .order('nome');
       if (!error && data) {
-        // Remover qualquer campo _pending que possa ter vindo do cache
         const cleanData = data.map(item => {
           const { _pending, ...rest } = item;
           return rest;
@@ -40,53 +35,49 @@ export function useProdutos() {
     setLoading(false);
   }, [isConnected]);
 
-  // Salvar (insert/update)
   const salvarProduto = useCallback(async (produto: any, id?: number) => {
-    // Atualizar cache local imediatamente (otimista) e marcar como pendente
-    const cached = await getLocalData<any[]>(CACHE_KEY) || [];
-    let newProdutos: any[];
-    let tempId = Date.now();
-    if (id) {
-      // update: manter outros campos e adicionar _pending
-      newProdutos = cached.map(p =>
-        p.idproduto === id ? { ...p, ...produto, _pending: true } : p
-      );
-    } else {
-      // insert: gerar ID temporário e marcar _pending
-      newProdutos = [
-        ...cached,
-        { ...produto, idproduto: tempId, _pending: true },
-      ];
+    if (isSaving.current) return; // previne chamadas simultâneas
+    isSaving.current = true;
+
+    try {
+      const cached = await getLocalData<any[]>(CACHE_KEY) || [];
+      let newProdutos: any[];
+      let tempId = Date.now();
+      if (id) {
+        newProdutos = cached.map(p =>
+          p.idproduto === id ? { ...p, ...produto, _pending: true } : p
+        );
+      } else {
+        newProdutos = [
+          ...cached,
+          { ...produto, idproduto: tempId, _pending: true },
+        ];
+      }
+      setProdutos(newProdutos);
+      await saveLocalData(CACHE_KEY, newProdutos);
+
+      await enqueueOperation({
+        table: 'produto',
+        action: id ? 'update' : 'insert',
+        data: id ? { ...produto, idproduto: id } : produto,
+      });
+
+      if (isConnected) {
+        const { processQueue } = await import('../services/sync');
+        await processQueue();
+      }
+      await carregar();
+    } finally {
+      isSaving.current = false;
     }
-    setProdutos(newProdutos);
-    await saveLocalData(CACHE_KEY, newProdutos);
-
-    // Adicionar à fila de sincronização
-    await enqueueOperation({
-      table: 'produto',
-      action: id ? 'update' : 'insert',
-      data: id ? { ...produto, idproduto: id } : produto,
-    });
-
-    // Se online, processar a fila imediatamente (isso vai remover o _pending)
-    if (isConnected) {
-      const { processQueue } = await import('../services/sync');
-      processQueue();
-    }
-
-    // Recarregar para sincronizar (vai remover o _pending quando online)
-    carregar();
   }, [isConnected, carregar]);
 
-  // Excluir
   const excluirProduto = useCallback(async (id: number) => {
-    // Remover do cache local imediatamente
     const cached = await getLocalData<any[]>(CACHE_KEY) || [];
     const newProdutos = cached.filter(p => p.idproduto !== id);
     setProdutos(newProdutos);
     await saveLocalData(CACHE_KEY, newProdutos);
 
-    // Adicionar à fila
     await enqueueOperation({
       table: 'produto',
       action: 'delete',
@@ -95,9 +86,9 @@ export function useProdutos() {
 
     if (isConnected) {
       const { processQueue } = await import('../services/sync');
-      processQueue();
+      await processQueue();
     }
-    carregar();
+    await carregar();
   }, [isConnected, carregar]);
 
   useEffect(() => {

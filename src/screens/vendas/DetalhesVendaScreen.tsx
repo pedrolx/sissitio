@@ -5,14 +5,13 @@ import { Button } from '../../components/Button';
 import { calcularRateio } from '../../services/rateio';
 import { formatDateBR } from '../../utils/dateUtils';
 
-
 interface Venda {
   idvenda: number;
   datavenda: string;
   valortotal: number;
   statuspagamento: string;
-  cliente: { nome: string; telefone: string }[] | null;
-  usuario: { nome: string }[] | null;
+  cliente?: { nome: string; telefone: string } | null;
+  usuario?: { nome: string } | null;
 }
 
 interface ItemVenda {
@@ -20,7 +19,7 @@ interface ItemVenda {
   quantidade: number;
   valorunitario: number;
   valortotal: number;
-  produto: { nome: string; unidademedida: string }[] | null;
+  produto?: { nome: string; unidademedida: string } | null;
 }
 
 interface Props {
@@ -40,7 +39,6 @@ export default function DetalhesVendaScreen({ route }: any) {
 
   async function carregarDetalhes() {
     setLoading(true);
-    // Buscar cabeçalho da venda
     const { data: vendaData, error: vendaError } = await supabase
       .from('venda')
       .select('*, cliente(nome, telefone), usuario(nome)')
@@ -54,7 +52,6 @@ export default function DetalhesVendaScreen({ route }: any) {
     }
     setVenda(vendaData);
 
-    // Buscar itens da venda
     const { data: itensData, error: itensError } = await supabase
       .from('itemvenda')
       .select('*, produto(nome, unidademedida)')
@@ -84,13 +81,13 @@ export default function DetalhesVendaScreen({ route }: any) {
         <Text style={styles.value}>{formatDateBR(venda.datavenda, true)}</Text>
 
         <Text style={styles.label}>Cliente:</Text>
-        <Text style={styles.value}>{venda.cliente?.[0]?.nome || '—'}</Text>
+        <Text style={styles.value}>{venda.cliente?.nome || 'Cliente removido'}</Text>
 
         <Text style={styles.label}>Telefone:</Text>
-        <Text style={styles.value}>{venda.cliente?.[0]?.telefone || '—'}</Text>
+        <Text style={styles.value}>{venda.cliente?.telefone || '—'}</Text>
 
         <Text style={styles.label}>Usuário:</Text>
-        <Text style={styles.value}>{venda.usuario?.[0]?.nome || '—'}</Text>
+        <Text style={styles.value}>{venda.usuario?.nome || '—'}</Text>
 
         <Text style={styles.label}>Status Pagamento:</Text>
         <Text style={styles.value}>{venda.statuspagamento}</Text>
@@ -99,9 +96,9 @@ export default function DetalhesVendaScreen({ route }: any) {
       <Text style={styles.subtitle}>Itens</Text>
       {itens.map((item) => (
         <View key={item.iditemvenda} style={styles.itemCard}>
-          <Text style={styles.itemNome}>{item.produto?.[0]?.nome || '—'}</Text>
+          <Text style={styles.itemNome}>{item.produto?.nome || 'Produto removido'}</Text>
           <Text style={styles.itemDetalhe}>
-            {item.quantidade} {item.produto?.[0]?.unidademedida || ''} x {formatarMoeda(item.valorunitario)}
+            {item.quantidade} {item.produto?.unidademedida || ''} x {formatarMoeda(item.valorunitario)}
           </Text>
           <Text style={styles.itemTotal}>{formatarMoeda(item.valortotal)}</Text>
         </View>
@@ -149,31 +146,9 @@ const styles = StyleSheet.create({
   totalCard: { backgroundColor: '#3E7C59', borderRadius: 12, padding: 16, marginTop: 20, marginBottom: 30, alignItems: 'center' },
   totalLabel: { fontSize: 18, color: '#FFF', fontWeight: 'bold' },
   totalValue: { fontSize: 24, color: '#FFF', fontWeight: 'bold', marginTop: 8 },
-  rateioCard: {
-    backgroundColor: '#F0F4F0',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  rateioTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2C2C2C',
-    marginBottom: 8,
-  },
-  rateioRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 4,
-  },
-  rateioLabel: {
-    fontSize: 14,
-    color: '#2C2C2C',
-  },
-  rateioValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#3E7C59',
-  },
+  rateioCard: { backgroundColor: '#F0F4F0', borderRadius: 12, padding: 16, marginTop: 16, marginBottom: 16 },
+  rateioTitle: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C', marginBottom: 8 },
+  rateioRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 4 },
+  rateioLabel: { fontSize: 14, color: '#2C2C2C' },
+  rateioValue: { fontSize: 14, fontWeight: 'bold', color: '#3E7C59' },
 });

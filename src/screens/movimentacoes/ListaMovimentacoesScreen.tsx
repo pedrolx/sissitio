@@ -24,7 +24,6 @@ export default function ListaMovimentacoesScreen() {
     if (data) setProdutos(data);
   }
 
-  // O filtro é aplicado no carregamento do hook, então recarregamos
   const aplicarFiltros = () => {
     carregar();
     setModalVisible(false);
@@ -43,8 +42,11 @@ export default function ListaMovimentacoesScreen() {
     <View style={styles.card}>
       <Text style={styles.data}>{formatDateBR(item.datamovimentacao, true)}</Text>
       <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
-      <Text>Produto: {item.produto?.[0]?.nome || '—'}</Text>
-      <Text>Animal: {item.animal?.[0]?.especie || '—'}</Text>
+      <Text>Produto: {item.produto?.[0]?.nome || 'Produto removido'}</Text>
+      <Text>
+        Animal: {item.animal?.[0]?.especie || 'Animal removido'}
+        {item.animal?.[0]?.observacoes ? ` (${item.animal[0].observacoes})` : ''}
+      </Text>
       <Text>Quantidade: {item.quantidade}</Text>
       <Text>Observação: {item.observacoes || '—'}</Text>
     </View>

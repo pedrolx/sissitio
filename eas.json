@@ -24,6 +24,8 @@
         "buildType": "apk"
       },
       "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://lekudjvmkxopccpvljda.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_SlVIx2JLhol_DOjx4JQrEg_d558ezSo",
         "NPM_FLAGS": "--legacy-peer-deps",
         "EXPO_USE_JSC": "true"
       }

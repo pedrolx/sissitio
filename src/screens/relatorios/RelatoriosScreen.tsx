@@ -17,7 +17,7 @@ import { Button } from '../../components/Button';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
-// Interface para os dados agregados
+// Interfaces – Supabase retorna arrays para relações
 interface RelatorioEstoque {
   nome: string;
   quantidadeatual: number;
@@ -43,12 +43,11 @@ interface RelatorioAnimal {
   totalAbatidos: number;
   totalVendidos: number;
   pesoMedio: number;
-  especies: { especie: string; quantidade: number }[]; // <-- NOVO
+  especies: { especie: string; quantidade: number }[];
   evolucao: { mes: string; nascimentos: number; abates: number; vendas: number }[];
 }
 
 export default function RelatoriosScreen() {
-  // Estado de loading e período
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<'hoje' | 'semana' | 'mes' | 'personalizado'>('mes');
   const [dataInicio, setDataInicio] = useState('');
@@ -56,16 +55,12 @@ export default function RelatoriosScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerType, setDatePickerType] = useState<'inicio' | 'fim'>('inicio');
 
-  // Dados dos relatórios
   const [estoque, setEstoque] = useState<RelatorioEstoque[]>([]);
   const [vendas, setVendas] = useState<RelatorioVenda | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<RelatorioMovimentacao | null>(null);
   const [animais, setAnimais] = useState<RelatorioAnimal | null>(null);
-
-  // Estado para controle de aba
   const [tipoRelatorio, setTipoRelatorio] = useState<'estoque' | 'vendas' | 'movimentacoes' | 'animais'>('estoque');
 
-  // Calcula datas com base no período selecionado
   const getDatasPeriodo = () => {
     const hoje = new Date();
     let inicio = new Date(hoje);
@@ -91,7 +86,6 @@ export default function RelatoriosScreen() {
     return { inicio, fim };
   };
 
-  // Carregar dados conforme período e tipo
   const carregarDados = async () => {
     setLoading(true);
     const { inicio, fim } = getDatasPeriodo();
@@ -115,7 +109,7 @@ export default function RelatoriosScreen() {
     }
   };
 
-  // ---------- Funções de carregamento ----------
+  // ---------- FUNÇÕES DE CARREGAMENTO (CORRIGIDAS) ----------
 
   const carregarEstoque = async () => {
     const { data, error } = await supabase
@@ -123,7 +117,7 @@ export default function RelatoriosScreen() {
       .select('quantidadeatual, produto(nome, unidademedida)');
     if (error) throw error;
     const formatted = data.map((item: any) => ({
-      nome: item.produto?.[0]?.nome || '—',
+      nome: item.produto?.[0]?.nome || 'Produto removido',
       quantidadeatual: item.quantidadeatual,
       unidademedida: item.produto?.[0]?.unidademedida || '',
     }));
@@ -131,7 +125,6 @@ export default function RelatoriosScreen() {
   };
 
   const carregarVendas = async (inicio: string, fim: string) => {
-    // 1. Total de vendas e ticket médio
     const { data: vendasData, error: vendaError } = await supabase
       .from('venda')
       .select('valortotal, idcliente')
@@ -144,7 +137,6 @@ export default function RelatoriosScreen() {
     const totalClientes = new Set(vendasData?.map(v => v.idcliente) || []).size;
     const ticketMedio = vendasData?.length ? totalVendas / vendasData.length : 0;
 
-    // 2. Vendas por dia (últimos 7 dias)
     const { data: vendasDiarias, error: diarioError } = await supabase
       .from('venda')
       .select('datavenda, valortotal')
@@ -163,16 +155,10 @@ export default function RelatoriosScreen() {
       .map(([data, total]) => ({ data, total }))
       .sort((a, b) => a.data.localeCompare(b.data));
 
-    setVendas({
-      totalVendas,
-      ticketMedio,
-      totalClientes,
-      vendasPorDia,
-    });
+    setVendas({ totalVendas, ticketMedio, totalClientes, vendasPorDia });
   };
 
   const carregarMovimentacoes = async (inicio: string, fim: string) => {
-    // 1. Total entradas e saídas
     const { data: movData, error: movError } = await supabase
       .from('movimentacao')
       .select('tipomovimentacao, quantidade, idproduto, produto(nome)')
@@ -187,7 +173,7 @@ export default function RelatoriosScreen() {
     const saidasPorProduto: Record<string, number> = {};
 
     movData?.forEach(m => {
-      const nome = m.produto?.[0]?.nome || 'Desconhecido';
+      const nome = m.produto?.[0]?.nome || 'Produto removido';
       if (m.tipomovimentacao === 'entrada') {
         totalEntradas += m.quantidade || 0;
         entradasPorProduto[nome] = (entradasPorProduto[nome] || 0) + (m.quantidade || 0);
@@ -207,16 +193,10 @@ export default function RelatoriosScreen() {
       .sort((a, b) => b.quantidade - a.quantidade)
       .slice(0, 5);
 
-    setMovimentacoes({
-      totalEntradas,
-      totalSaidas,
-      maisEntradas,
-      maisSaidas,
-    });
+    setMovimentacoes({ totalEntradas, totalSaidas, maisEntradas, maisSaidas });
   };
 
   const carregarAnimais = async () => {
-    // 1. Status e peso
     const { data: statusData, error: statusError } = await supabase
       .from('animal')
       .select('status, pesoatual, especie');
@@ -229,7 +209,6 @@ export default function RelatoriosScreen() {
     const pesos = statusData?.filter(a => a.pesoatual).map(a => a.pesoatual) || [];
     const pesoMedio = pesos.length ? pesos.reduce((a, b) => a + b, 0) / pesos.length : 0;
 
-    // 2. Contagem por espécie (NOVO!)
     const contagemPorEspecie: Record<string, number> = {};
     statusData?.forEach(a => {
       const especie = a.especie || 'Desconhecida';
@@ -240,7 +219,6 @@ export default function RelatoriosScreen() {
       .map(([especie, quantidade]) => ({ especie, quantidade }))
       .sort((a, b) => b.quantidade - a.quantidade);
 
-    // 3. Evolução mensal (mantido)
     const { data: evolucaoData, error: evolucaoError } = await supabase
       .from('movimentacao')
       .select('tipomovimentacao, datamovimentacao')
@@ -260,17 +238,10 @@ export default function RelatoriosScreen() {
       .map(([mes, dados]) => ({ mes, ...dados }))
       .sort((a, b) => a.mes.localeCompare(b.mes));
 
-    setAnimais({
-      totalVivos,
-      totalAbatidos,
-      totalVendidos,
-      pesoMedio,
-      especies, // <-- NOVO
-      evolucao,
-    });
+    setAnimais({ totalVivos, totalAbatidos, totalVendidos, pesoMedio, especies, evolucao });
   };
 
-  // ---------- Renderização ----------
+  // ---------- RENDERIZAÇÃO (MANTIDA) ----------
 
   const renderPeriodoSelector = () => (
     <View style={styles.periodoContainer}>
@@ -349,16 +320,11 @@ export default function RelatoriosScreen() {
     }
 
     switch (tipoRelatorio) {
-      case 'estoque':
-        return renderEstoque();
-      case 'vendas':
-        return renderVendas();
-      case 'movimentacoes':
-        return renderMovimentacoes();
-      case 'animais':
-        return renderAnimais();
-      default:
-        return null;
+      case 'estoque': return renderEstoque();
+      case 'vendas': return renderVendas();
+      case 'movimentacoes': return renderMovimentacoes();
+      case 'animais': return renderAnimais();
+      default: return null;
     }
   };
 
@@ -414,20 +380,8 @@ export default function RelatoriosScreen() {
     if (!vendas) return <Text style={styles.emptyText}>Nenhuma venda no período.</Text>;
 
     const pieData = [
-      {
-        name: 'Vendas',
-        amount: vendas.totalVendas,
-        color: '#3E7C59',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
-      {
-        name: 'Ticket Médio',
-        amount: vendas.ticketMedio,
-        color: '#C17F59',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
+      { name: 'Vendas', amount: vendas.totalVendas, color: '#3E7C59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
+      { name: 'Ticket Médio', amount: vendas.ticketMedio, color: '#C17F59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
     ];
 
     return (
@@ -473,20 +427,8 @@ export default function RelatoriosScreen() {
     if (!movimentacoes) return <Text style={styles.emptyText}>Nenhuma movimentação no período.</Text>;
 
     const pieData = [
-      {
-        name: 'Entradas',
-        amount: movimentacoes.totalEntradas,
-        color: '#3E7C59',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
-      {
-        name: 'Saídas',
-        amount: movimentacoes.totalSaidas,
-        color: '#C17F59',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
+      { name: 'Entradas', amount: movimentacoes.totalEntradas, color: '#3E7C59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
+      { name: 'Saídas', amount: movimentacoes.totalSaidas, color: '#C17F59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
     ];
 
     return (
@@ -535,27 +477,9 @@ export default function RelatoriosScreen() {
     if (!animais) return <Text style={styles.emptyText}>Nenhum animal cadastrado.</Text>;
 
     const pieData = [
-      {
-        name: 'Vivos',
-        amount: animais.totalVivos,
-        color: '#3E7C59',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
-      {
-        name: 'Abatidos',
-        amount: animais.totalAbatidos,
-        color: '#C17F59',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
-      {
-        name: 'Vendidos',
-        amount: animais.totalVendidos,
-        color: '#5BA16A',
-        legendFontColor: '#2C2C2C',
-        legendFontSize: 12,
-      },
+      { name: 'Vivos', amount: animais.totalVivos, color: '#3E7C59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
+      { name: 'Abatidos', amount: animais.totalAbatidos, color: '#C17F59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
+      { name: 'Vendidos', amount: animais.totalVendidos, color: '#5BA16A', legendFontColor: '#2C2C2C', legendFontSize: 12 },
     ];
 
     return (
@@ -579,7 +503,6 @@ export default function RelatoriosScreen() {
           absolute
         />
 
-        {/* 🔹 NOVO: Contagem por espécie */}
         <Text style={styles.subtitle}>Animais por Espécie</Text>
         {animais.especies.length === 0 ? (
           <Text style={styles.emptyText}>Nenhuma espécie cadastrada.</Text>
@@ -592,7 +515,6 @@ export default function RelatoriosScreen() {
           ))
         )}
 
-        {/* Evolução mensal (mantido) */}
         {animais.evolucao.length > 0 && (
           <>
             <Text style={styles.subtitle}>Evolução Mensal</Text>
@@ -616,9 +538,7 @@ export default function RelatoriosScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>RELATÓRIOS</Text>
-
       {renderPeriodoSelector()}
-
       <View style={styles.linhaBotoes}>
         {['estoque', 'vendas', 'movimentacoes', 'animais'].map((tipo) => (
           <TouchableOpacity
@@ -628,13 +548,12 @@ export default function RelatoriosScreen() {
           >
             <Text style={styles.botaoTexto}>
               {tipo === 'estoque' ? 'Estoque' :
-                tipo === 'vendas' ? 'Vendas' :
-                  tipo === 'movimentacoes' ? 'Movimentações' : 'Animais'}
+               tipo === 'vendas' ? 'Vendas' :
+               tipo === 'movimentacoes' ? 'Movimentações' : 'Animais'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-
       <View style={styles.card}>
         {renderConteudo()}
       </View>
@@ -645,68 +564,35 @@ export default function RelatoriosScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F5EF', padding: 16 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#3E7C59' },
-
-  // Período
   periodoContainer: { marginBottom: 20 },
   periodoLabel: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C', marginBottom: 8 },
   periodoBotoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  periodoBotao: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#E8E8E8',
-    marginRight: 8,
-    marginBottom: 8,
-  },
+  periodoBotao: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#E8E8E8', marginRight: 8, marginBottom: 8 },
   periodoBotaoAtivo: { backgroundColor: '#3E7C59' },
   periodoTexto: { color: '#2C2C2C', fontWeight: '500' },
   periodoTextoAtivo: { color: '#FFFFFF' },
   personalizadoContainer: { marginTop: 12 },
   dateRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  dateButton: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D2D2D2',
-  },
+  dateButton: { flex: 1, backgroundColor: '#FFF', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#D2D2D2' },
   dateButtonText: { color: '#2C2C2C' },
-
-  // Abas
   linhaBotoes: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
   botao: { backgroundColor: '#E8E8E8', padding: 10, borderRadius: 8, flex: 1, marginHorizontal: 4, alignItems: 'center' },
   botaoAtivo: { backgroundColor: '#3E7C59' },
   botaoTexto: { fontWeight: '600', color: '#2C2C2C' },
-
   card: { backgroundColor: '#FFF', borderRadius: 12, padding: 16, elevation: 2 },
   subtitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#3E7C59', marginTop: 16 },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#D2D2D2' },
   itemName: { fontSize: 14, color: '#2C2C2C' },
   itemValue: { fontSize: 14, fontWeight: 'bold', color: '#3E7C59' },
   chart: { marginVertical: 8, borderRadius: 8 },
-
-  resumoCard: {
-    backgroundColor: '#E8F0E8',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
+  resumoCard: { backgroundColor: '#E8F0E8', borderRadius: 12, padding: 16, marginBottom: 16 },
   resumoLabel: { fontSize: 16, color: '#2C2C2C' },
   resumoValor: { fontSize: 22, fontWeight: 'bold', color: '#3E7C59', marginTop: 4 },
   resumoDetalhe: { fontSize: 14, color: '#8A8A8A', marginTop: 4 },
-
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   loadingText: { marginTop: 12, color: '#8A8A8A' },
   emptyText: { textAlign: 'center', color: '#8A8A8A', marginTop: 20 },
-
-  evolucaoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
+  evolucaoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E8E8E8' },
   evolucaoMes: { fontWeight: 'bold', color: '#2C2C2C' },
   evolucaoDado: { color: '#8A8A8A' },
 });

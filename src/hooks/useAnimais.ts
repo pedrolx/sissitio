@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocalData, saveLocalData } from '../services/storage';
 import { enqueueOperation } from '../services/sync';
@@ -10,6 +10,7 @@ export function useAnimais() {
   const [animais, setAnimais] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isConnected } = useNetInfo();
+  const isSaving = useRef(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -34,33 +35,39 @@ export function useAnimais() {
   }, [isConnected]);
 
   const salvarAnimal = useCallback(async (animal: any, id?: number) => {
-    const cached = await getLocalData<any[]>(CACHE_KEY) || [];
-    let newAnimais: any[];
-    let tempId = Date.now();
-    if (id) {
-      newAnimais = cached.map(a =>
-        a.idanimal === id ? { ...a, ...animal, _pending: true } : a
-      );
-    } else {
-      newAnimais = [
-        ...cached,
-        { ...animal, idanimal: tempId, _pending: true },
-      ];
-    }
-    setAnimais(newAnimais);
-    await saveLocalData(CACHE_KEY, newAnimais);
+    if (isSaving.current) return;
+    isSaving.current = true;
+    try {
+      const cached = await getLocalData<any[]>(CACHE_KEY) || [];
+      let newAnimais: any[];
+      let tempId = Date.now();
+      if (id) {
+        newAnimais = cached.map(a =>
+          a.idanimal === id ? { ...a, ...animal, _pending: true } : a
+        );
+      } else {
+        newAnimais = [
+          ...cached,
+          { ...animal, idanimal: tempId, _pending: true },
+        ];
+      }
+      setAnimais(newAnimais);
+      await saveLocalData(CACHE_KEY, newAnimais);
 
-    await enqueueOperation({
-      table: 'animal',
-      action: id ? 'update' : 'insert',
-      data: id ? { ...animal, idanimal: id } : animal,
-    });
+      await enqueueOperation({
+        table: 'animal',
+        action: id ? 'update' : 'insert',
+        data: id ? { ...animal, idanimal: id } : animal,
+      });
 
-    if (isConnected) {
-      const { processQueue } = await import('../services/sync');
-      processQueue();
+      if (isConnected) {
+        const { processQueue } = await import('../services/sync');
+        await processQueue();
+      }
+      await carregar();
+    } finally {
+      isSaving.current = false;
     }
-    carregar();
   }, [isConnected, carregar]);
 
   const excluirAnimal = useCallback(async (id: number) => {
@@ -77,9 +84,9 @@ export function useAnimais() {
 
     if (isConnected) {
       const { processQueue } = await import('../services/sync');
-      processQueue();
+      await processQueue();
     }
-    carregar();
+    await carregar();
   }, [isConnected, carregar]);
 
   useEffect(() => {

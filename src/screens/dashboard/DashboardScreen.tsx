@@ -18,23 +18,19 @@ import { formatDateBR } from '../../utils/dateUtils';
 const screenWidth = Dimensions.get('window').width - 32;
 
 // ========== INTERFACES ==========
+// O Supabase retorna arrays para relações
 interface Movimentacao {
   idmovimentacao: number;
   datamovimentacao: string;
   tipomovimentacao: string;
   quantidade: number;
   produto: { nome: string }[] | null;
+  animal: { especie: string; observacoes?: string }[] | null; // adicionado
 }
 
 interface ProdutoEstoque {
   quantidadeatual: number;
   produto: { nome: string; unidademedida: string }[] | null;
-}
-
-interface ItemVenda {
-  idproduto: number;
-  quantidade: number;
-  produto: { nome: string }[] | null;
 }
 
 // ========== COMPONENTE ==========
@@ -60,10 +56,10 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   async function carregarDados() {
     setLoading(true);
     try {
-      // 1. Últimas 3 movimentações
+      // 1. Últimas 3 movimentações – agora incluindo animal(especie, observacoes)
       const { data: movData } = await supabase
         .from('movimentacao')
-        .select('*, produto(nome)')
+        .select('*, produto(nome), animal(especie, observacoes)')
         .order('datamovimentacao', { ascending: false })
         .limit(3);
       setMovimentacoes(movData || []);
@@ -106,7 +102,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
       const grouped: Record<string, number> = {};
       (maisVendidos || []).forEach((item) => {
-        const nome = item.produto?.[0]?.nome || 'Desconhecido';
+        const nome = item.produto?.[0]?.nome || 'Produto removido';
         grouped[nome] = (grouped[nome] || 0) + item.quantidade;
       });
 
@@ -223,27 +219,41 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           {produtosBaixo.length === 0 ? (
             <Text style={styles.movimento}>Nenhum produto em baixa</Text>
           ) : (
-            produtosBaixo.map((item, idx) => (
-              <Text key={idx} style={styles.movimento}>
-                {item.produto?.[0]?.nome || '—'} – {item.quantidadeatual}{' '}
-                {item.produto?.[0]?.unidademedida || ''}
-              </Text>
-            ))
+            produtosBaixo.map((item, idx) => {
+              const nome = item.produto?.[0]?.nome || 'Produto removido';
+              const unidade = item.produto?.[0]?.unidademedida || '';
+              return (
+                <Text key={idx} style={styles.movimento}>
+                  {nome} – {item.quantidadeatual} {unidade}
+                </Text>
+              );
+            })
           )}
         </View>
 
-        {/* Últimas movimentações */}
+        {/* Últimas movimentações – agora com animal */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🔄 Últimas Movimentações</Text>
           {movimentacoes.length === 0 ? (
             <Text style={styles.movimento}>Nenhuma movimentação registrada</Text>
           ) : (
-            movimentacoes.map((item, idx) => (
-              <Text key={idx} style={styles.movimento}>
-                {formatDateBR(item.datamovimentacao, true)} – {item.tipomovimentacao} –{' '}
-                {item.produto?.[0]?.nome || 'Animal'} {item.quantidade ? `(${item.quantidade})` : ''}
-              </Text>
-            ))
+            movimentacoes.map((item, idx) => {
+              const nomeProduto = item.produto?.[0]?.nome || null;
+              const nomeAnimal = item.animal?.[0]?.especie || null;
+              const observacaoAnimal = item.animal?.[0]?.observacoes || '';
+
+              let descricao = '';
+              if (nomeProduto) descricao = nomeProduto;
+              else if (nomeAnimal) descricao = `${nomeAnimal} ${observacaoAnimal ? `(${observacaoAnimal})` : ''}`;
+              else descricao = 'Item removido';
+
+              return (
+                <Text key={idx} style={styles.movimento}>
+                  {formatDateBR(item.datamovimentacao, true)} – {item.tipomovimentacao} – {descricao}{' '}
+                  {item.quantidade ? `(${item.quantidade})` : ''}
+                </Text>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -257,7 +267,6 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 16, color: '#8A8A8A', fontFamily: 'Inter' },
   title: { fontSize: 22, fontFamily: 'Montserrat', fontWeight: '700', color: '#2C2C2C', padding: 20, textAlign: 'center' },
 
-  // Grid de acesso rápido
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 10 },
   menuItem: {
     width: '30%',
@@ -285,5 +294,4 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontFamily: 'Inter', fontWeight: '600', marginBottom: 12, color: '#2C2C2C' },
   movimento: { fontSize: 14, fontFamily: 'Inter', color: '#8A8A8A', marginBottom: 8 },
   chart: { marginVertical: 8, borderRadius: 8 },
-
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocalData, saveLocalData } from '../services/storage';
 import { enqueueOperation } from '../services/sync';
@@ -10,6 +10,7 @@ export function useClientes() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isConnected } = useNetInfo();
+  const isSaving = useRef(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -34,33 +35,39 @@ export function useClientes() {
   }, [isConnected]);
 
   const salvarCliente = useCallback(async (cliente: any, id?: number) => {
-    const cached = await getLocalData<any[]>(CACHE_KEY) || [];
-    let newClientes: any[];
-    let tempId = Date.now();
-    if (id) {
-      newClientes = cached.map(c =>
-        c.idcliente === id ? { ...c, ...cliente, _pending: true } : c
-      );
-    } else {
-      newClientes = [
-        ...cached,
-        { ...cliente, idcliente: tempId, _pending: true },
-      ];
-    }
-    setClientes(newClientes);
-    await saveLocalData(CACHE_KEY, newClientes);
+    if (isSaving.current) return;
+    isSaving.current = true;
+    try {
+      const cached = await getLocalData<any[]>(CACHE_KEY) || [];
+      let newClientes: any[];
+      let tempId = Date.now();
+      if (id) {
+        newClientes = cached.map(c =>
+          c.idcliente === id ? { ...c, ...cliente, _pending: true } : c
+        );
+      } else {
+        newClientes = [
+          ...cached,
+          { ...cliente, idcliente: tempId, _pending: true },
+        ];
+      }
+      setClientes(newClientes);
+      await saveLocalData(CACHE_KEY, newClientes);
 
-    await enqueueOperation({
-      table: 'cliente',
-      action: id ? 'update' : 'insert',
-      data: id ? { ...cliente, idcliente: id } : cliente,
-    });
+      await enqueueOperation({
+        table: 'cliente',
+        action: id ? 'update' : 'insert',
+        data: id ? { ...cliente, idcliente: id } : cliente,
+      });
 
-    if (isConnected) {
-      const { processQueue } = await import('../services/sync');
-      processQueue();
+      if (isConnected) {
+        const { processQueue } = await import('../services/sync');
+        await processQueue();
+      }
+      await carregar();
+    } finally {
+      isSaving.current = false;
     }
-    carregar();
   }, [isConnected, carregar]);
 
   const excluirCliente = useCallback(async (id: number) => {
@@ -77,9 +84,9 @@ export function useClientes() {
 
     if (isConnected) {
       const { processQueue } = await import('../services/sync');
-      processQueue();
+      await processQueue();
     }
-    carregar();
+    await carregar();
   }, [isConnected, carregar]);
 
   useEffect(() => {

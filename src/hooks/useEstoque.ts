@@ -1,3 +1,4 @@
+// src/hooks/useEstoque.ts
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocalData, saveLocalData } from '../services/storage';
@@ -17,9 +18,11 @@ export function useEstoque() {
     if (cached) setEstoque(cached);
 
     if (isConnected) {
+      // Inclui categoria no select
       const { data, error } = await supabase
         .from('estoque')
-        .select('*, produto(nome, unidademedida)');
+        .select('*, produto(nome, categoria, unidademedida)')
+        .order('produto(nome)');
       if (!error && data) {
         setEstoque(data);
         await saveLocalData(CACHE_KEY, data);
@@ -29,7 +32,6 @@ export function useEstoque() {
   }, [isConnected]);
 
   const atualizarEstoque = useCallback(async (idproduto: number, novaQuantidade: number) => {
-    // Atualiza cache local
     const cached = await getLocalData<any[]>(CACHE_KEY) || [];
     const newEstoque = cached.map(e => 
       e.idproduto === idproduto ? { ...e, quantidadeatual: novaQuantidade } : e
@@ -37,7 +39,6 @@ export function useEstoque() {
     setEstoque(newEstoque);
     await saveLocalData(CACHE_KEY, newEstoque);
 
-    // Adiciona operação à fila (update)
     await enqueueOperation({
       table: 'estoque',
       action: 'update',
@@ -46,9 +47,9 @@ export function useEstoque() {
 
     if (isConnected) {
       const { processQueue } = await import('../services/sync');
-      processQueue();
+      await processQueue();
     }
-    carregar();
+    await carregar();
   }, [isConnected, carregar]);
 
   useEffect(() => {
