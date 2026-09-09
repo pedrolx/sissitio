@@ -5,12 +5,7 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { Picker } from '@react-native-picker/picker';
 
-interface Props {
-  route: { params?: { idproduto?: number; tipo: 'entrada' | 'saida' } };
-  navigation: any;
-}
-
-export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) {
+export default function MovimentacaoEstoqueScreen({ route, navigation }: any) {
   const { idproduto: idProdutoParam, tipo } = route.params || { tipo: 'entrada' };
   const [produtos, setProdutos] = useState<{ idproduto: number; nome: string }[]>([]);
   const [idproduto, setIdProduto] = useState<number | null>(idProdutoParam || null);
@@ -49,7 +44,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) 
     }
 
     setLoading(true);
-    // Buscar estoque atual do produto selecionado
     const { data: estoque, error: errEst } = await supabase
       .from('estoque')
       .select('quantidadeatual')
@@ -75,7 +69,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) 
       return;
     }
 
-    // Atualizar estoque
     const { error: updateErr } = await supabase
       .from('estoque')
       .update({ quantidadeatual: novaQuantidade })
@@ -87,7 +80,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) 
       return;
     }
 
-    // Inserir movimentação
     const { error: movErr } = await supabase.from('movimentacao').insert({
       idproduto,
       quantidade: qtd,
@@ -111,7 +103,6 @@ export default function MovimentacaoEstoqueScreen({ route, navigation }: Props) 
         {tipo === 'entrada' ? 'Registrar Entrada' : 'Registrar Saída'}
       </Text>
 
-      {/* Seletor de produto */}
       <Text style={styles.label}>Produto *</Text>
       {loadingProdutos ? (
         <Text>Carregando produtos...</Text>

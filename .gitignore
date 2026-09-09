@@ -39,3 +39,26 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Arquivos de ambiente com chaves
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Dependências
+node_modules/
+
+# Artefatos do Expo
+.expo/
+dist/
+build/
+web-build/
+
+# Arquivos de sistema
+.DS_Store
+*.log
+
+# Opcional: arquivos de IDE
+.vscode/
+.idea/

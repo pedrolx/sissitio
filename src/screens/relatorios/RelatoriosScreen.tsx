@@ -13,6 +13,8 @@ import { BarChart, PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button } from '../../components/Button';
+import { formatCurrency } from '../../utils/formatUtils';
+import { Picker } from '@react-native-picker/picker';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -33,8 +35,8 @@ interface RelatorioVenda {
 interface RelatorioMovimentacao {
   totalEntradas: number;
   totalSaidas: number;
-  maisEntradas: { nome: string; quantidade: number }[];
-  maisSaidas: { nome: string; quantidade: number }[];
+  maisEntradas: { nome: string; quantidade: number; unidade: string }[];
+  maisSaidas: { nome: string; quantidade: number; unidade: string }[];
 }
 
 interface RelatorioAnimal {
@@ -59,6 +61,9 @@ export default function RelatoriosScreen() {
   const [movimentacoes, setMovimentacoes] = useState<RelatorioMovimentacao | null>(null);
   const [animais, setAnimais] = useState<RelatorioAnimal | null>(null);
   const [tipoRelatorio, setTipoRelatorio] = useState<'estoque' | 'vendas' | 'movimentacoes' | 'animais'>('estoque');
+
+  // estado para filtro de status de pagamento
+  const [filtroStatus, setFiltroStatus] = useState('todos');
 
   const getDatasPeriodo = () => {
     const hoje = new Date();
@@ -111,24 +116,49 @@ export default function RelatoriosScreen() {
   // ---------- FUNÇÕES DE CARREGAMENTO ----------
 
   const carregarEstoque = async () => {
-    const { data, error } = await supabase
+    const { data: estoqueData, error: estError } = await supabase
       .from('estoque')
-      .select('quantidadeatual, produto(nome, unidademedida)');
-    if (error) throw error;
-    const formatted = data.map((item: any) => ({
-      nome: item.produto?.[0]?.nome || 'Produto removido',
+      .select('quantidadeatual, idproduto');
+
+    if (estError) throw estError;
+
+    const ids = estoqueData.map(e => e.idproduto).filter(Boolean);
+    let produtosMap: Record<number, { nome: string; unidademedida: string }> = {};
+    if (ids.length) {
+      const { data: prods, error: prodError } = await supabase
+        .from('produto')
+        .select('idproduto, nome, unidademedida')
+        .in('idproduto', ids);
+      if (prodError) throw prodError;
+      if (prods) {
+        produtosMap = prods.reduce((acc, p) => {
+          acc[p.idproduto] = { nome: p.nome, unidademedida: p.unidademedida };
+          return acc;
+        }, {} as Record<number, { nome: string; unidademedida: string }>);
+      }
+    }
+
+    const formatted = estoqueData.map(item => ({
+      nome: produtosMap[item.idproduto]?.nome || 'Produto removido',
       quantidadeatual: item.quantidadeatual,
-      unidademedida: item.produto?.[0]?.unidademedida || '',
+      unidademedida: produtosMap[item.idproduto]?.unidademedida || '',
     }));
     setEstoque(formatted);
   };
 
   const carregarVendas = async (inicio: string, fim: string) => {
-    const { data: vendasData, error: vendaError } = await supabase
+    // Construir a query com filtro de status
+    let query = supabase
       .from('venda')
-      .select('valortotal, idcliente')
+      .select('valortotal, idcliente, statuspagamento')
       .gte('datavenda', inicio)
       .lte('datavenda', fim);
+
+    if (filtroStatus !== 'todos') {
+      query = query.eq('statuspagamento', filtroStatus);
+    }
+
+    const { data: vendasData, error: vendaError } = await query;
 
     if (vendaError) throw vendaError;
 
@@ -136,11 +166,18 @@ export default function RelatoriosScreen() {
     const totalClientes = new Set(vendasData?.map(v => v.idcliente) || []).size;
     const ticketMedio = vendasData?.length ? totalVendas / vendasData.length : 0;
 
-    const { data: vendasDiarias, error: diarioError } = await supabase
+    // Vendas por dia com o mesmo filtro
+    let queryDiaria = supabase
       .from('venda')
       .select('datavenda, valortotal')
       .gte('datavenda', inicio)
       .lte('datavenda', fim);
+
+    if (filtroStatus !== 'todos') {
+      queryDiaria = queryDiaria.eq('statuspagamento', filtroStatus);
+    }
+
+    const { data: vendasDiarias, error: diarioError } = await queryDiaria;
 
     if (diarioError) throw diarioError;
 
@@ -160,35 +197,56 @@ export default function RelatoriosScreen() {
   const carregarMovimentacoes = async (inicio: string, fim: string) => {
     const { data: movData, error: movError } = await supabase
       .from('movimentacao')
-      .select('tipomovimentacao, quantidade, idproduto, produto(nome)')
+      .select('tipomovimentacao, quantidade, idproduto')
       .gte('datamovimentacao', inicio)
       .lte('datamovimentacao', fim);
 
     if (movError) throw movError;
 
+    const ids = movData.map(m => m.idproduto).filter(Boolean);
+    let produtosMap: Record<number, { nome: string; unidade: string }> = {};
+    if (ids.length) {
+      const { data: prods, error: prodError } = await supabase
+        .from('produto')
+        .select('idproduto, nome, unidademedida')
+        .in('idproduto', ids);
+      if (prodError) throw prodError;
+      if (prods) {
+        produtosMap = prods.reduce((acc, p) => {
+          acc[p.idproduto] = { nome: p.nome, unidade: p.unidademedida || '' };
+          return acc;
+        }, {} as Record<number, { nome: string; unidade: string }>);
+      }
+    }
+
     let totalEntradas = 0;
     let totalSaidas = 0;
-    const entradasPorProduto: Record<string, number> = {};
-    const saidasPorProduto: Record<string, number> = {};
+    const entradasMap: Record<string, { nome: string; unidade: string; quantidade: number }> = {};
+    const saidasMap: Record<string, { nome: string; unidade: string; quantidade: number }> = {};
 
     movData?.forEach(m => {
-      const nome = m.produto?.[0]?.nome || 'Produto removido';
+      const produto = produtosMap[m.idproduto];
+      const nome = produto?.nome || 'Produto removido';
+      const unidade = produto?.unidade || '';
       if (m.tipomovimentacao === 'entrada') {
         totalEntradas += m.quantidade || 0;
-        entradasPorProduto[nome] = (entradasPorProduto[nome] || 0) + (m.quantidade || 0);
+        if (!entradasMap[nome]) {
+          entradasMap[nome] = { nome, unidade, quantidade: 0 };
+        }
+        entradasMap[nome].quantidade += m.quantidade || 0;
       } else if (m.tipomovimentacao === 'saida' || m.tipomovimentacao === 'venda_animal') {
         totalSaidas += m.quantidade || 0;
-        saidasPorProduto[nome] = (saidasPorProduto[nome] || 0) + (m.quantidade || 0);
+        if (!saidasMap[nome]) {
+          saidasMap[nome] = { nome, unidade, quantidade: 0 };
+        }
+        saidasMap[nome].quantidade += m.quantidade || 0;
       }
     });
 
-    const maisEntradas = Object.entries(entradasPorProduto)
-      .map(([nome, quantidade]) => ({ nome, quantidade }))
+    const maisEntradas = Object.values(entradasMap)
       .sort((a, b) => b.quantidade - a.quantidade)
       .slice(0, 5);
-
-    const maisSaidas = Object.entries(saidasPorProduto)
-      .map(([nome, quantidade]) => ({ nome, quantidade }))
+    const maisSaidas = Object.values(saidasMap)
       .sort((a, b) => b.quantidade - a.quantidade)
       .slice(0, 5);
 
@@ -308,6 +366,31 @@ export default function RelatoriosScreen() {
     </View>
   );
 
+  // Render do seletor de status de pagamento (aparece apenas no relatório de vendas)
+  const renderFiltroStatus = () => {
+    if (tipoRelatorio !== 'vendas') return null;
+
+    return (
+      <View style={styles.filtroStatusContainer}>
+        <Text style={styles.filtroStatusLabel}>Status Pagamento:</Text>
+        <Picker
+          selectedValue={filtroStatus}
+          onValueChange={(itemValue) => {
+            setFiltroStatus(itemValue);
+            // Recarregar dados ao mudar o filtro
+            carregarDados();
+          }}
+          style={styles.filtroStatusPicker}
+        >
+          <Picker.Item label="Todos" value="todos" />
+          <Picker.Item label="Pendente" value="Pendente" />
+          <Picker.Item label="Pago" value="Pago" />
+          <Picker.Item label="Cancelado" value="Cancelado" />
+        </Picker>
+      </View>
+    );
+  };
+
   const renderConteudo = () => {
     if (loading) {
       return (
@@ -327,6 +410,7 @@ export default function RelatoriosScreen() {
     }
   };
 
+  // Funções de renderização
   const renderEstoque = () => {
     if (estoque.length === 0) return <Text style={styles.emptyText}>Nenhum produto cadastrado.</Text>;
 
@@ -339,7 +423,7 @@ export default function RelatoriosScreen() {
     const totalValor = estoque.reduce((acc, item) => acc + item.quantidadeatual, 0);
 
     return (
-      <View>
+      <View style={styles.contentContainer}>
         <View style={styles.resumoCard}>
           <Text style={styles.resumoLabel}>Total de Itens em Estoque</Text>
           <Text style={styles.resumoValor}>{totalValor} unidades</Text>
@@ -376,19 +460,14 @@ export default function RelatoriosScreen() {
   };
 
   const renderVendas = () => {
-    if (!vendas) return <Text style={styles.emptyText}>Nenhuma venda no período.</Text>;
-
-    const pieData = [
-      { name: 'Vendas', amount: vendas.totalVendas, color: '#3E7C59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
-      { name: 'Ticket Médio', amount: vendas.ticketMedio, color: '#C17F59', legendFontColor: '#2C2C2C', legendFontSize: 12 },
-    ];
+    if (!vendas) return <Text style={styles.emptyText}>Nenhuma venda no período com o filtro selecionado.</Text>;
 
     return (
-      <View>
+      <View style={styles.contentContainer}>
         <View style={styles.resumoCard}>
           <Text style={styles.resumoLabel}>Total de Vendas</Text>
-          <Text style={styles.resumoValor}>R$ {vendas.totalVendas.toFixed(2)}</Text>
-          <Text style={styles.resumoDetalhe}>Ticket médio: R$ {vendas.ticketMedio.toFixed(2)}</Text>
+          <Text style={styles.resumoValor}>{formatCurrency(vendas.totalVendas)}</Text>
+          <Text style={styles.resumoDetalhe}>Ticket médio: {formatCurrency(vendas.ticketMedio)}</Text>
           <Text style={styles.resumoDetalhe}>Clientes únicos: {vendas.totalClientes}</Text>
         </View>
 
@@ -416,7 +495,7 @@ export default function RelatoriosScreen() {
             yAxisSuffix=""
           />
         ) : (
-          <Text style={styles.emptyText}>Sem dados para o período.</Text>
+          <Text style={styles.emptyText}>Sem dados para o período e filtro selecionados.</Text>
         )}
       </View>
     );
@@ -431,7 +510,7 @@ export default function RelatoriosScreen() {
     ];
 
     return (
-      <View>
+      <View style={styles.contentContainer}>
         <View style={styles.resumoCard}>
           <Text style={styles.resumoLabel}>Entradas vs Saídas</Text>
           <Text style={styles.resumoValor}>Entradas: {movimentacoes.totalEntradas}</Text>
@@ -454,20 +533,32 @@ export default function RelatoriosScreen() {
         )}
 
         <Text style={styles.subtitle}>Produtos com mais Entradas</Text>
-        {movimentacoes.maisEntradas.map((item, idx) => (
-          <View key={idx} style={styles.itemRow}>
-            <Text style={styles.itemName}>{item.nome}</Text>
-            <Text style={styles.itemValue}>{item.quantidade}</Text>
-          </View>
-        ))}
+        {movimentacoes.maisEntradas.length === 0 ? (
+          <Text style={styles.emptyText}>Nenhuma entrada registrada.</Text>
+        ) : (
+          movimentacoes.maisEntradas.map((item, idx) => (
+            <View key={idx} style={styles.itemRow}>
+              <Text style={styles.itemName}>{item.nome}</Text>
+              <Text style={styles.itemValue}>
+                {item.quantidade} {item.unidade}
+              </Text>
+            </View>
+          ))
+        )}
 
         <Text style={styles.subtitle}>Produtos com mais Saídas</Text>
-        {movimentacoes.maisSaidas.map((item, idx) => (
-          <View key={idx} style={styles.itemRow}>
-            <Text style={styles.itemName}>{item.nome}</Text>
-            <Text style={styles.itemValue}>{item.quantidade}</Text>
-          </View>
-        ))}
+        {movimentacoes.maisSaidas.length === 0 ? (
+          <Text style={styles.emptyText}>Nenhuma saída registrada.</Text>
+        ) : (
+          movimentacoes.maisSaidas.map((item, idx) => (
+            <View key={idx} style={styles.itemRow}>
+              <Text style={styles.itemName}>{item.nome}</Text>
+              <Text style={styles.itemValue}>
+                {item.quantidade} {item.unidade}
+              </Text>
+            </View>
+          ))
+        )}
       </View>
     );
   };
@@ -482,7 +573,7 @@ export default function RelatoriosScreen() {
     ];
 
     return (
-      <View>
+      <View style={styles.contentContainer}>
         <View style={styles.resumoCard}>
           <Text style={styles.resumoLabel}>Resumo do Rebanho</Text>
           <Text style={styles.resumoValor}>Vivos: {animais.totalVivos}</Text>
@@ -530,14 +621,23 @@ export default function RelatoriosScreen() {
     );
   };
 
+  // Recarregar dados sempre que o tipo de relatório ou o filtro de status mudar
   useEffect(() => {
     carregarDados();
-  }, [tipoRelatorio]);
+  }, [tipoRelatorio, filtroStatus]);
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+    >
       <Text style={styles.title}>RELATÓRIOS</Text>
       {renderPeriodoSelector()}
+
+      {/* Seletor de status aparece apenas no relatório de vendas */}
+      {renderFiltroStatus()}
+
       <View style={styles.linhaBotoes}>
         {['estoque', 'vendas', 'movimentacoes', 'animais'].map((tipo) => (
           <TouchableOpacity
@@ -547,8 +647,8 @@ export default function RelatoriosScreen() {
           >
             <Text style={styles.botaoTexto}>
               {tipo === 'estoque' ? 'Estoque' :
-               tipo === 'vendas' ? 'Vendas' :
-               tipo === 'movimentacoes' ? 'Movimentações' : 'Animais'}
+                tipo === 'vendas' ? 'Vendas' :
+                  tipo === 'movimentacoes' ? 'Movimentações' : 'Animais'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -561,8 +661,23 @@ export default function RelatoriosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F5EF', padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#3E7C59' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F5EF',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+    flexGrow: 1,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#3E7C59',
+    fontFamily: 'Montserrat',
+  },
   periodoContainer: { marginBottom: 20 },
   periodoLabel: { fontSize: 16, fontWeight: 'bold', color: '#2C2C2C', marginBottom: 8 },
   periodoBotoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -578,7 +693,16 @@ const styles = StyleSheet.create({
   botao: { backgroundColor: '#E8E8E8', padding: 10, borderRadius: 8, flex: 1, marginHorizontal: 4, alignItems: 'center' },
   botaoAtivo: { backgroundColor: '#3E7C59' },
   botaoTexto: { fontWeight: '600', color: '#2C2C2C' },
-  card: { backgroundColor: '#FFF', borderRadius: 12, padding: 16, elevation: 2 },
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    marginBottom: 20,
+  },
+  contentContainer: {
+    // sem altura fixa
+  },
   subtitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#3E7C59', marginTop: 16 },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#D2D2D2' },
   itemName: { fontSize: 14, color: '#2C2C2C' },
@@ -594,4 +718,24 @@ const styles = StyleSheet.create({
   evolucaoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E8E8E8' },
   evolucaoMes: { fontWeight: 'bold', color: '#2C2C2C' },
   evolucaoDado: { color: '#8A8A8A' },
+
+  // Estilos para o filtro de status
+  filtroStatusContainer: {
+    marginBottom: 16,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 8,
+    elevation: 1,
+  },
+  filtroStatusLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2C2C2C',
+    marginBottom: 4,
+  },
+  filtroStatusPicker: {
+    height: 50,
+    backgroundColor: '#F7F5EF',
+    borderRadius: 8,
+  },
 });

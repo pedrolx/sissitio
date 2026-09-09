@@ -34,7 +34,7 @@ export function useAnimais() {
     setLoading(false);
   }, [isConnected]);
 
-  const salvarAnimal = useCallback(async (animal: any, id?: number) => {
+  const salvarAnimal = useCallback(async (animal: any, id?: number, skipReload = false) => {
     if (isSaving.current) return;
     isSaving.current = true;
     try {
@@ -64,11 +64,32 @@ export function useAnimais() {
         const { processQueue } = await import('../services/sync');
         await processQueue();
       }
-      await carregar();
+      if (!skipReload) {
+        await carregar();
+      }
     } finally {
       isSaving.current = false;
     }
   }, [isConnected, carregar]);
+
+  // Nova função para cadastro em lote
+  const salvarAnimaisLote = useCallback(async (animaisData: any[]) => {
+    if (isSaving.current) return;
+    if (!animaisData.length) return;
+
+    isSaving.current = true;
+    try {
+      // Salva um por um, sem recarregar a lista entre eles
+      for (const animal of animaisData) {
+        // Gera um ID temporário para cada
+        await salvarAnimal(animal, undefined, true);
+      }
+      // Após todos, recarrega a lista uma única vez
+      await carregar();
+    } finally {
+      isSaving.current = false;
+    }
+  }, [salvarAnimal, carregar]);
 
   const excluirAnimal = useCallback(async (id: number) => {
     const cached = await getLocalData<any[]>(CACHE_KEY) || [];
@@ -93,5 +114,5 @@ export function useAnimais() {
     carregar();
   }, [carregar]);
 
-  return { animais, loading, carregar, salvarAnimal, excluirAnimal };
+  return { animais, loading, carregar, salvarAnimal, salvarAnimaisLote, excluirAnimal };
 }

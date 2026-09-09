@@ -23,6 +23,8 @@ import ListaMovimentacoesScreen from '../screens/movimentacoes/ListaMovimentacoe
 import ListaVendasScreen from '../screens/vendas/ListaVendasScreen';
 import FormVendaScreen from '../screens/vendas/FormVendaScreen';
 import DetalhesVendaScreen from '../screens/vendas/DetalhesVendaScreen';
+import ListaAnotacoesScreen from '../screens/anotacoes/AnotacoesScreen.tsx';
+import FormAnotacaoScreen from '../screens/anotacoes/FormAnotacaoScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -111,6 +113,10 @@ export default function AppNavigator({ initialRouteName = 'Login' }: AppNavigato
         {/* Telas de Relatórios e Perfil */}
         <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
         <Stack.Screen name="Perfil" component={PerfilScreen} />
+
+        {/* Telas de Anotações */}
+        <Stack.Screen name="ListaAnotacoes" component={ListaAnotacoesScreen} />
+        <Stack.Screen name="FormAnotacao" component={FormAnotacaoScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

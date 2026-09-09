@@ -12,19 +12,48 @@ export function useMovimentacoes() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
+
     const cached = await getLocalData<any[]>(CACHE_KEY);
     if (cached) setMovimentacoes(cached);
 
     if (isConnected) {
-      const { data, error } = await supabase
-        .from('movimentacao')
-        .select('*, produto(nome), animal(especie)')
-        .order('datamovimentacao', { ascending: false });
-      if (!error && data) {
-        setMovimentacoes(data);
-        await saveLocalData(CACHE_KEY, data);
+      try {
+        // Buscar movimentações
+        const { data: movs, error: movError } = await supabase
+          .from('movimentacao')
+          .select('*')
+          .order('datamovimentacao', { ascending: false });
+
+        if (movError) throw movError;
+
+        // Buscar produtos (para obter nomes)
+        const { data: produtos, error: prodError } = await supabase
+          .from('produto')
+          .select('idproduto, nome, unidademedida');
+
+        if (prodError) throw prodError;
+
+        // Buscar animais (para obter espécie e observações)
+        const { data: animais, error: animalError } = await supabase
+          .from('animal')
+          .select('idanimal, especie, observacoes');
+
+        if (animalError) throw animalError;
+
+        // Combinar
+        const movsComNomes = movs.map(m => ({
+          ...m,
+          produto: produtos?.find(p => p.idproduto === m.idproduto) || null,
+          animal: animais?.find(a => a.idanimal === m.idanimal) || null,
+        }));
+
+        setMovimentacoes(movsComNomes);
+        await saveLocalData(CACHE_KEY, movsComNomes);
+      } catch (err) {
+        console.error('[useMovimentacoes] erro ao carregar:', err);
       }
     }
+
     setLoading(false);
   }, [isConnected]);
 

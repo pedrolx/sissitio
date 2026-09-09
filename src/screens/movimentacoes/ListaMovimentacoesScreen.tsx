@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  BackHandler,
+} from 'react-native';
 import { useMovimentacoes } from '../../hooks/useMovimentacoes';
 import { Input } from '../../components/Input';
 import { Picker } from '@react-native-picker/picker';
@@ -17,7 +25,18 @@ export default function ListaMovimentacoesScreen() {
 
   useEffect(() => {
     carregarProdutos();
-  }, []);
+
+    // Listener para o botão voltar do Android fechar o modal
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (modalVisible) {
+        setModalVisible(false);
+        return true;
+      }
+      return false;
+    });
+
+    return () => backHandler.remove();
+  }, [modalVisible]);
 
   async function carregarProdutos() {
     const { data } = await supabase.from('produto').select('idproduto, nome').order('nome');
@@ -38,19 +57,32 @@ export default function ListaMovimentacoesScreen() {
     carregar();
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <Text style={styles.data}>{formatDateBR(item.datamovimentacao, true)}</Text>
-      <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
-      <Text>Produto: {item.produto?.[0]?.nome || 'Produto removido'}</Text>
-      <Text>
-        Animal: {item.animal?.[0]?.especie || 'Animal removido'}
-        {item.animal?.[0]?.observacoes ? ` (${item.animal[0].observacoes})` : ''}
-      </Text>
-      <Text>Quantidade: {item.quantidade}</Text>
-      <Text>Observação: {item.observacoes || '—'}</Text>
-    </View>
-  );
+  const fecharModal = () => {
+    setModalVisible(false);
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    // Tipos de movimentação que envolvem animal
+    const tiposAnimais = ['abate', 'venda_animal'];
+    const isAnimalMov = tiposAnimais.includes(item.tipomovimentacao?.toLowerCase());
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.data}>{formatDateBR(item.datamovimentacao, true)}</Text>
+        <Text style={styles.tipo}>Tipo: {item.tipomovimentacao}</Text>
+        <Text>Produto: {item.produto?.nome || 'Produto removido'}</Text>
+        <Text>Unidade: {item.produto?.unidademedida || '—'}</Text>
+        {isAnimalMov && (
+          <Text>
+            Animal: {item.animal?.especie || 'Animal removido'}
+            {item.animal?.observacoes ? ` (${item.animal.observacoes})` : ''}
+          </Text>
+        )}
+        <Text>Quantidade: {item.quantidade}</Text>
+        <Text>Observação: {item.observacoes || '—'}</Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -58,11 +90,16 @@ export default function ListaMovimentacoesScreen() {
         <Text style={styles.filtroButtonText}>🔍 Filtrar</Text>
       </TouchableOpacity>
 
-      <Modal visible={modalVisible} animationType="slide">
+      <Modal visible={modalVisible} animationType="slide" transparent={false}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Filtros</Text>
+
           <Text style={styles.label}>Tipo</Text>
-          <Picker selectedValue={filtroTipo} onValueChange={(val) => setFiltroTipo(val)} style={styles.picker}>
+          <Picker
+            selectedValue={filtroTipo}
+            onValueChange={(val) => setFiltroTipo(val)}
+            style={styles.picker}
+          >
             <Picker.Item label="Todos" value="todos" />
             <Picker.Item label="Entrada" value="entrada" />
             <Picker.Item label="Saída" value="saida" />
@@ -72,7 +109,11 @@ export default function ListaMovimentacoesScreen() {
           </Picker>
 
           <Text style={styles.label}>Produto</Text>
-          <Picker selectedValue={filtroProduto} onValueChange={(val) => setFiltroProduto(val)} style={styles.picker}>
+          <Picker
+            selectedValue={filtroProduto}
+            onValueChange={(val) => setFiltroProduto(val)}
+            style={styles.picker}
+          >
             <Picker.Item label="Todos" value="" />
             {produtos.map((p) => (
               <Picker.Item key={p.idproduto} label={p.nome} value={p.idproduto.toString()} />
@@ -93,10 +134,22 @@ export default function ListaMovimentacoesScreen() {
               <Text style={styles.modalButtonText}>Limpar</Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity style={styles.closeButton} onPress={fecharModal}>
+            <Text style={styles.closeButtonText}>Fechar</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
 
-      {loading ? <Text style={styles.loading}>Carregando...</Text> : <FlatList data={movimentacoes} renderItem={renderItem} keyExtractor={(item) => item.idmovimentacao.toString()} />}
+      {loading ? (
+        <Text style={styles.loading}>Carregando...</Text>
+      ) : (
+        <FlatList
+          data={movimentacoes}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.idmovimentacao.toString()}
+        />
+      )}
     </View>
   );
 }
@@ -113,7 +166,31 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   label: { fontSize: 16, fontWeight: 'bold', marginTop: 12 },
   picker: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D2D2D2', borderRadius: 8, marginBottom: 8 },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 },
-  modalButton: { padding: 12, borderRadius: 8, flex: 0.4, alignItems: 'center' },
-  modalButtonText: { color: '#FFF', fontWeight: 'bold' },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+  },
+  modalButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  closeButton: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    backgroundColor: '#D2D2D2',
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  closeButtonText: {
+    color: '#2C2C2C',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 });

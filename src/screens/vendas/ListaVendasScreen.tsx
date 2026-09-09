@@ -5,49 +5,66 @@ import { Button } from '../../components/Button';
 import { useFocusEffect } from '@react-navigation/native';
 import { processQueue } from '../../services/sync';
 import { formatDateBR } from '../../utils/dateUtils';
+import { formatCurrency } from '../../utils/formatUtils';
 
 export default function ListaVendasScreen({ navigation }) {
-  const { vendas, loading } = useVendas();
+  const { vendas, loading, carregar } = useVendas();
 
   useFocusEffect(
     useCallback(() => {
       processQueue();
-    }, [])
+      carregar();
+    }, [carregar])
   );
 
   const formatarMoeda = (valor: number) => {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('DetalhesVenda', { id: item.idvenda })}
-    >
-      <View style={styles.cardContent}>
-        <Text style={styles.id}>Venda #{item.idvenda}</Text>
-        <Text style={styles.data}>{formatDateBR(item.datavenda, true)}</Text>
-        <Text style={styles.cliente}>Cliente: {item.cliente?.nome || 'Cliente removido'}</Text>
-        <Text style={styles.total}>{formatarMoeda(item.valortotal)}</Text>
-        <Text style={styles.status}>Status: {item.statuspagamento}</Text>
+  const renderItem = ({ item }: { item: any }) => {
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('DetalhesVenda', { id: item.idvenda })}
+      >
+        <View style={styles.cardContent}>
+          <Text style={styles.id}>Venda #{item.idvenda}</Text>
+          <Text style={styles.data}>{formatDateBR(item.datavenda, true)}</Text>
+          <Text style={styles.cliente}>Cliente: {item.cliente?.nome || 'Cliente removido'}</Text>
+          <Text style={styles.total}>{formatCurrency(item.valortotal)}</Text>
+          <Text style={styles.status}>Status: {item.statuspagamento}</Text>
+        </View>
+        <Text style={styles.detailIcon}>👉</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loading}>Carregando...</Text>
       </View>
-      <Text style={styles.detailIcon}>👉</Text>
-    </TouchableOpacity>
-  );
+    );
+  }
+
+  if (vendas.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Button title="+ Nova Venda" onPress={() => navigation.navigate('FormVenda')} />
+        <Text style={styles.loading}>Nenhuma venda encontrada.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Button title="+ Nova Venda" onPress={() => navigation.navigate('FormVenda')} />
-      {loading ? (
-        <Text style={styles.loading}>Carregando...</Text>
-      ) : (
-        <FlatList
-          data={vendas}
-          keyExtractor={(item) => item.idvenda.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
-      )}
+      <FlatList
+        data={vendas}
+        keyExtractor={(item) => item.idvenda.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
     </View>
   );
 }

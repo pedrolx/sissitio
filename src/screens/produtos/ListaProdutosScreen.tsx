@@ -4,6 +4,7 @@ import { useProdutos } from '../../hooks/useProdutos';
 import { Button } from '../../components/Button';
 import { useFocusEffect } from '@react-navigation/native';
 import { processQueue } from '../../services/sync';
+import { formatCurrency } from '../../utils/formatUtils';
 
 export default function ListaProdutosScreen({ navigation }) {
   const { produtos, loading, excluirProduto } = useProdutos();
@@ -19,7 +20,7 @@ export default function ListaProdutosScreen({ navigation }) {
       <View>
         <Text style={styles.nome}>{item.nome}</Text>
         <Text>{item.categoria} • {item.unidademedida}</Text>
-        <Text>R$ {item.precobase?.toFixed(2)}</Text>
+        <Text>{formatCurrency(Number(item.precobase) || 0)}</Text>
       </View>
       <View style={styles.actions}>
         {/* Ícone de pendência que aparece se o item ainda não foi sincronizado */}

@@ -43,7 +43,7 @@ function getPrimaryKeyField(table: string): string {
     itemvenda: 'iditemvenda',
     estoque: 'idestoque',
     movimentacao: 'idmovimentacao',
-    usuario: 'idusuario',
+    usuario: 'iduser',
   };
   return mapping[table] || 'id';
 }

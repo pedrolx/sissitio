@@ -14,6 +14,8 @@ import { Dimensions } from 'react-native';
 import { processQueue } from '../../services/sync';
 import { useFocusEffect } from '@react-navigation/native';
 import { formatDateBR } from '../../utils/dateUtils';
+import { formatCurrency } from '../../utils/formatUtils';
+import { AnotacoesWidget } from '../../components/AnotacoesWidget';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -23,13 +25,29 @@ interface Movimentacao {
   datamovimentacao: string;
   tipomovimentacao: string;
   quantidade: number;
-  produto: { nome: string }[] | null;
-  animal: { especie: string; observacoes?: string }[] | null; // adicionado
+  produto: { nome: string } | null;
+  animal: { especie: string; observacoes?: string } | null;
 }
 
 interface ProdutoEstoque {
   quantidadeatual: number;
-  produto: { nome: string; unidademedida: string }[] | null;
+  produto: { nome: string; unidademedida: string } | null;
+}
+
+// ========== FUNÇÕES AUXILIARES ==========
+function getDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDayRangeUTC(date: Date): { start: string; end: string } {
+  const dateStr = getDateString(date);
+  return {
+    start: `${dateStr}T00:00:00.000Z`,
+    end: `${dateStr}T23:59:59.999Z`,
+  };
 }
 
 // ========== COMPONENTE ==========
@@ -55,63 +73,127 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   async function carregarDados() {
     setLoading(true);
     try {
-      // Últimas 3 movimentações
+      // ====== 1. ÚLTIMAS MOVIMENTAÇÕES ======
       const { data: movData } = await supabase
         .from('movimentacao')
-        .select('*, produto(nome), animal(especie, observacoes)')
+        .select('*')
         .order('datamovimentacao', { ascending: false })
         .limit(3);
-      setMovimentacoes(movData || []);
 
-      // Total de vendas de hoje
+      const produtosIds = movData?.map(m => m.idproduto).filter((id): id is number => id !== null && id !== undefined) || [];
+      const animaisIds = movData?.map(m => m.idanimal).filter((id): id is number => id !== null && id !== undefined) || [];
+
+      let produtosMap: Record<number, { nome: string }> = {};
+      let animaisMap: Record<number, { especie: string; observacoes?: string }> = {};
+
+      if (produtosIds.length > 0) {
+        const { data: prods } = await supabase.from('produto').select('idproduto, nome').in('idproduto', produtosIds);
+        if (prods) {
+          produtosMap = prods.reduce<Record<number, { nome: string }>>((acc, p) => {
+            acc[p.idproduto] = { nome: p.nome };
+            return acc;
+          }, {});
+        }
+      }
+
+      if (animaisIds.length > 0) {
+        const { data: anims } = await supabase.from('animal').select('idanimal, especie, observacoes').in('idanimal', animaisIds);
+        if (anims) {
+          animaisMap = anims.reduce<Record<number, { especie: string; observacoes?: string }>>((acc, a) => {
+            acc[a.idanimal] = { especie: a.especie, observacoes: a.observacoes };
+            return acc;
+          }, {});
+        }
+      }
+
+      const movsComNomes = movData?.map(m => ({
+        ...m,
+        produto: m.idproduto && produtosMap[m.idproduto] ? produtosMap[m.idproduto] : null,
+        animal: m.idanimal && animaisMap[m.idanimal] ? animaisMap[m.idanimal] : null,
+      })) || [];
+      setMovimentacoes(movsComNomes);
+
+      // ====== 2. VENDAS DE HOJE ======
       const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-      const amanha = new Date(hoje);
-      amanha.setDate(amanha.getDate() + 1);
-      const { data: vendasHoje } = await supabase
+      const { start: startHoje, end: endHoje } = getDayRangeUTC(hoje);
+      const { data: vendasHoje, error: errHoje } = await supabase
         .from('venda')
         .select('valortotal')
-        .gte('datavenda', hoje.toISOString())
-        .lt('datavenda', amanha.toISOString());
-      const totalHoje = vendasHoje?.reduce((sum, v) => sum + v.valortotal, 0) || 0;
+        .gte('datavenda', startHoje)
+        .lt('datavenda', endHoje);
+
+      if (errHoje) console.error('[Dashboard] Erro ao buscar vendas de hoje:', errHoje);
+      const totalHoje = vendasHoje?.reduce((sum, v) => sum + (v.valortotal || 0), 0) || 0;
       setTotalVendasHoje(totalHoje);
 
-      // Total de vendas do mês
+      // ====== 3. VENDAS DO MÊS ======
       const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-      const { data: vendasMes } = await supabase
+      const { start: startMes } = getDayRangeUTC(primeiroDiaMes);
+      const { data: vendasMes, error: errMes } = await supabase
         .from('venda')
         .select('valortotal')
-        .gte('datavenda', primeiroDiaMes.toISOString());
-      const totalMes = vendasMes?.reduce((sum, v) => sum + v.valortotal, 0) || 0;
+        .gte('datavenda', startMes);
+
+      if (errMes) console.error('[Dashboard] Erro ao buscar vendas do mês:', errMes);
+      const totalMes = vendasMes?.reduce((sum, v) => sum + (v.valortotal || 0), 0) || 0;
       setTotalVendasMes(totalMes);
 
-      // Produtos com estoque baixo (menos de 5)
+      // ====== 4. PRODUTOS COM ESTOQUE BAIXO ======
       const { data: estoque } = await supabase
         .from('estoque')
-        .select('quantidadeatual, produto(nome, unidademedida)')
+        .select('quantidadeatual, idproduto')
         .lt('quantidadeatual', 5);
-      setProdutosBaixo(estoque || []);
 
-      // Produtos mais vendidos (Top 5)
+      const idsEstoque = estoque?.map(e => e.idproduto).filter((id): id is number => id !== null && id !== undefined) || [];
+      let prodEstoqueMap: Record<number, { nome: string; unidademedida: string }> = {};
+      if (idsEstoque.length > 0) {
+        const { data: prods } = await supabase.from('produto').select('idproduto, nome, unidademedida').in('idproduto', idsEstoque);
+        if (prods) {
+          prodEstoqueMap = prods.reduce<Record<number, { nome: string; unidademedida: string }>>((acc, p) => {
+            acc[p.idproduto] = { nome: p.nome, unidademedida: p.unidademedida };
+            return acc;
+          }, {});
+        }
+      }
+
+      const estoqueComProdutos = estoque?.map(e => ({
+        quantidadeatual: e.quantidadeatual,
+        produto: e.idproduto && prodEstoqueMap[e.idproduto] ? prodEstoqueMap[e.idproduto] : null,
+      })) || [];
+      setProdutosBaixo(estoqueComProdutos);
+
+      // ====== 5. PRODUTOS MAIS VENDIDOS ======
       const { data: maisVendidos } = await supabase
         .from('itemvenda')
-        .select('idproduto, quantidade, produto(nome)')
+        .select('idproduto, quantidade')
         .order('quantidade', { ascending: false })
         .limit(5);
 
+      const idsProd = maisVendidos?.map(i => i.idproduto).filter((id): id is number => id !== null && id !== undefined) || [];
+      let prodNomesMap: Record<number, string> = {};
+      if (idsProd.length > 0) {
+        const { data: prods } = await supabase.from('produto').select('idproduto, nome').in('idproduto', idsProd);
+        if (prods) {
+          prodNomesMap = prods.reduce<Record<number, string>>((acc, p) => {
+            acc[p.idproduto] = p.nome;
+            return acc;
+          }, {});
+        }
+      }
+
       const grouped: Record<string, number> = {};
       (maisVendidos || []).forEach((item) => {
-        const nome = item.produto?.[0]?.nome || 'Produto removido';
-        grouped[nome] = (grouped[nome] || 0) + item.quantidade;
+        const nome = item.idproduto && prodNomesMap[item.idproduto] ? prodNomesMap[item.idproduto] : 'Produto removido';
+        grouped[nome] = (grouped[nome] || 0) + (item.quantidade || 0);
       });
-
       const top5 = Object.entries(grouped)
         .map(([nome, total]) => ({ nome, total }))
         .sort((a, b) => b.total - a.total)
         .slice(0, 5);
       setProdutosMaisVendidos(top5);
+
     } catch (error) {
-      console.error('Erro ao carregar dashboard:', error);
+      console.error('[Dashboard] Erro ao carregar dados:', error);
     }
     setLoading(false);
     setRefreshing(false);
@@ -170,19 +252,26 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
             <Text style={styles.menuIcon}>📈</Text>
             <Text style={styles.menuText}>Relatórios</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ListaAnotacoes')}>
+            <Text style={styles.menuIcon}>📝</Text>
+            <Text style={styles.menuText}>Anotações</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Cards de resumo */}
         <View style={styles.cardsRow}>
           <View style={[styles.cardPequeno, { backgroundColor: '#3E7C59' }]}>
             <Text style={styles.cardPequenoLabel}>Vendas Hoje</Text>
-            <Text style={styles.cardPequenoValor}>R$ {totalVendasHoje.toFixed(2)}</Text>
+            <Text style={styles.cardPequenoValor}>{formatCurrency(totalVendasHoje)}</Text>
           </View>
           <View style={[styles.cardPequeno, { backgroundColor: '#C17F59' }]}>
             <Text style={styles.cardPequenoLabel}>Vendas Mês</Text>
-            <Text style={styles.cardPequenoValor}>R$ {totalVendasMes.toFixed(2)}</Text>
+            <Text style={styles.cardPequenoValor}>{formatCurrency(totalVendasMes)}</Text>
           </View>
         </View>
+
+        <AnotacoesWidget navigation={navigation} />
 
         {/* Gráfico de produtos mais vendidos */}
         {produtosMaisVendidos.length > 0 && (
@@ -218,15 +307,11 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           {produtosBaixo.length === 0 ? (
             <Text style={styles.movimento}>Nenhum produto em baixa</Text>
           ) : (
-            produtosBaixo.map((item, idx) => {
-              const nome = item.produto?.[0]?.nome || 'Produto removido';
-              const unidade = item.produto?.[0]?.unidademedida || '';
-              return (
-                <Text key={idx} style={styles.movimento}>
-                  {nome} – {item.quantidadeatual} {unidade}
-                </Text>
-              );
-            })
+            produtosBaixo.map((item, idx) => (
+              <Text key={idx} style={styles.movimento}>
+                {item.produto?.nome || 'Produto removido'} – {item.quantidadeatual} {item.produto?.unidademedida || ''}
+              </Text>
+            ))
           )}
         </View>
 
@@ -237,10 +322,9 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
             <Text style={styles.movimento}>Nenhuma movimentação registrada</Text>
           ) : (
             movimentacoes.map((item, idx) => {
-              const nomeProduto = item.produto?.[0]?.nome || null;
-              const nomeAnimal = item.animal?.[0]?.especie || null;
-              const observacaoAnimal = item.animal?.[0]?.observacoes || '';
-
+              const nomeProduto = item.produto?.nome || null;
+              const nomeAnimal = item.animal?.especie || null;
+              const observacaoAnimal = item.animal?.observacoes || '';
               let descricao = '';
               if (nomeProduto) descricao = nomeProduto;
               else if (nomeAnimal) descricao = `${nomeAnimal} ${observacaoAnimal ? `(${observacaoAnimal})` : ''}`;
